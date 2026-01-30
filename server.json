@@ -1,0 +1,109 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "ai.ludo/game-assets",
+  "title": "Ludo AI Game Assets",
+  "description": "Generate game assets using AI: sprites, icons, backgrounds, 3D models (GLB), animated spritesheets, videos, sound effects, music, and character voices. Supports multiple art styles including pixel art, low poly, and stylized 3D.",
+  "repository": {
+    "url": "https://github.com/Ludo-AI/ludo-mcp",
+    "source": "github"
+  },
+  "version": "0.9.0",
+  "websiteUrl": "https://ludo.ai",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.ludo.ai/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "API key from Ludo AI (format: 'ApiKey your-api-key'). Get your key at https://app.ludo.ai",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "documentation": "https://api.ludo.ai/api-documentation",
+      "examples": [
+        {
+          "name": "Generate Pixel Art Sprite",
+          "description": "Create a character sprite with specific art style",
+          "note": "createImage with image_type='sprite', art_style='Pixel Art (16-Bit)', perspective='Side-Scroll'"
+        },
+        {
+          "name": "Create Isometric Game Icon",
+          "description": "Generate an app icon for your game",
+          "note": "createImage with image_type='icon', perspective='Isometric', aspect_ratio='ar_1_1'"
+        },
+        {
+          "name": "Convert Sprite to 3D Model",
+          "description": "Transform a 2D sprite into a 3D GLB model with PBR textures",
+          "note": "create3DModel with texture_type='pbr' returns model_url (.glb) and 4 snapshot images"
+        },
+        {
+          "name": "Create Walking Animation",
+          "description": "Animate a character with a walk cycle",
+          "note": "animateSprite with motion_prompt='walking cycle', loop=true, frames=16"
+        },
+        {
+          "name": "Generate Attack VFX",
+          "description": "Create animated visual effects",
+          "note": "animateSprite with image_type='sprite-vfx', motion_prompt='fire explosion effect'"
+        },
+        {
+          "name": "Create Game Trailer Clip",
+          "description": "Generate a short video from a screenshot",
+          "note": "createVideo with duration=5, prompt='camera slowly zooms in'"
+        },
+        {
+          "name": "Generate Laser Sound",
+          "description": "Create a sci-fi weapon sound effect",
+          "note": "createSoundEffect with description='futuristic laser gun firing, sci-fi'"
+        },
+        {
+          "name": "Create Battle Music",
+          "description": "Generate background music for combat",
+          "note": "createMusic with description='epic orchestral battle theme, fast-paced, intense'"
+        },
+        {
+          "name": "Generate Character Voice",
+          "description": "Create a unique voice for a game character",
+          "note": "createVoice with voice_description='gruff old warrior', text='Prepare for battle!'"
+        }
+      ],
+      "keywords": [
+        "game-dev",
+        "gamedev",
+        "sprites",
+        "pixel-art",
+        "3d-models",
+        "glb",
+        "animation",
+        "spritesheet",
+        "sound-effects",
+        "sfx",
+        "music",
+        "voice",
+        "tts",
+        "ai",
+        "assets",
+        "indie-game",
+        "unity",
+        "godot",
+        "unreal"
+      ],
+      "license": "Proprietary",
+      "publisher": "Ludo AI",
+      "notes": [
+        "Credit-based pricing: images (0.5), 3D models (3), animations (5), videos (5-15), audio (3)",
+        "Supports multiple art styles: Pixel Art, Low Poly, Cartoonish, Stylized 3D, and more",
+        "3D models output as GLB with optional PBR textures",
+        "Spritesheets support variable frame counts (4-64) and sizes (64-256px)",
+        "Long-running operations (3D models, animations) may take 60-120 seconds"
+      ]
+    }
+  }
+}
