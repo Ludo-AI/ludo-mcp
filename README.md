@@ -75,6 +75,57 @@ Generate sprites, icons, backgrounds, UI assets, and textures.
 
 ---
 
+### Edit Image (`editImage`)
+
+Modify an existing image using text instructions (smart editing).
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `image` | Yes | URL or base64-encoded image to edit |
+| `prompt` | Yes | Description of changes (e.g., "remove the background", "make it darker", "add clouds to the sky") |
+| `reference_image` | No | URL or base64 reference image for style/content guidance |
+| `n` | No | Number of variations (1-4, default: 1) |
+
+**Credits:** 0.5 per image
+
+---
+
+### Generate with Style (`generateWithStyle`)
+
+Generate new content while maintaining the visual style of a reference image.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `style_image` | Yes | URL or base64-encoded reference image for style matching |
+| `prompt` | Yes | Description of what to generate (e.g., "a warrior character", "a treasure chest") |
+| `image_type` | Yes | `sprite`, `icon`, `screenshot`, `art`, `asset`, `sprite-vfx`, `ui_asset`, `fixed_background`, `texture`, `3d`, `generic` |
+| `n` | No | Number of variations (1-4, default: 1) |
+
+**Credits:** 0.5 per image
+
+---
+
+### Generate Pose (`generatePose`)
+
+Generate a new pose for an existing sprite. **Use this BEFORE `animateSprite`** to get the best animation results - the starting pose should match your intended animation.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `image` | Yes | URL or base64-encoded sprite image |
+| `pose` | Yes | Target pose: `Idle (Front)`, `Idle (Back)`, `Walk / Run (Left)`, `Attack Ready`, `Jumping`, `Crouching`, `Flying`, `Defending / Blocking`, or any custom description |
+| `description` | No | Additional instructions to guide pose generation |
+| `n` | No | Number of variations (1-4, default: 1) |
+
+**Returns:** `url`, `pose`, `motion_prompt`
+
+**Example workflow:**
+1. Generate a "Walk / Run (Left)" pose with `generatePose`
+2. Use the returned `motion_prompt` directly in `animateSprite` for optimal animation results
+
+**Credits:** 0.5 per image
+
+---
+
 ### 3D Model Generation (`create3DModel`)
 
 Convert a 2D image to a 3D GLB model with textures.

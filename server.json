@@ -72,6 +72,21 @@
           "name": "Generate Character Voice",
           "description": "Create a unique voice for a game character",
           "note": "createVoice with voice_description='gruff old warrior', text='Prepare for battle!'"
+        },
+        {
+          "name": "Edit Image with AI",
+          "description": "Modify an existing image using text instructions",
+          "note": "editImage with image='url', prompt='remove the background and add clouds'"
+        },
+        {
+          "name": "Generate with Style Reference",
+          "description": "Create new content matching an existing art style",
+          "note": "generateWithStyle with style_image='url', prompt='a treasure chest', image_type='sprite'"
+        },
+        {
+          "name": "Generate Character Pose",
+          "description": "Create a new pose for animation preparation",
+          "note": "generatePose with image='url', pose='Attack Ready' - use BEFORE animateSprite for best results"
         }
       ],
       "keywords": [
