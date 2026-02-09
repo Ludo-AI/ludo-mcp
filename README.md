@@ -161,8 +161,10 @@ Create animated spritesheets from static images.
 | `duration` | No | Standard: 1.2-3s, New: 4s |
 | `final_image` | No | Ending frame for interpolation |
 | `pixel_art_filter` | No | `none`, `small`, `medium`, `large` |
+| `gif` | No | Generate an animated GIF (default: false) |
+| `individual_frames` | No | Extract individual frame images (default: false) |
 
-**Returns:** `spritesheet_url`, `video_url`, `gif_url`
+**Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `num_frames`, `num_cols`, `num_rows`
 
 **Credits:** 5 per animation
 **Processing time:** 30-90 seconds
