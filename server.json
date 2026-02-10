@@ -87,6 +87,16 @@
           "name": "Generate Character Pose",
           "description": "Create a new pose for animation preparation",
           "note": "generatePose with image='url', pose='Attack Ready' - use BEFORE animateSprite for best results"
+        },
+        {
+          "name": "Transfer Motion to Sprite",
+          "description": "Apply motion from a video onto a different sprite",
+          "note": "transferMotion with image='sprite_url', video='video_url' - transfers animation from video onto a static sprite"
+        },
+        {
+          "name": "Remove Image Background",
+          "description": "Remove the background from a sprite or image",
+          "note": "removeImageBackground with image='url' - returns a transparent PNG"
         }
       ],
       "keywords": [

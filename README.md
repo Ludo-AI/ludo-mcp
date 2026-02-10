@@ -6,9 +6,9 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 
 | Category | Capabilities |
 |----------|-------------|
-| **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures |
+| **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal |
 | **3D Models** | Convert 2D images to GLB models with PBR textures |
-| **Animation** | Animated spritesheets from static sprites (4-64 frames) |
+| **Animation** | Animated spritesheets from static sprites (4-64 frames), motion transfer from video |
 | **Video** | Generate short videos from images (3-10 seconds) |
 | **Audio** | Sound effects, background music, character voices, TTS |
 
@@ -126,6 +126,20 @@ Generate a new pose for an existing sprite. **Use this BEFORE `animateSprite`** 
 
 ---
 
+### Remove Background (`removeImageBackground`)
+
+Remove the background from an image, returning a transparent PNG.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `image` | Yes | URL or base64-encoded image |
+
+**Returns:** `url` (transparent PNG)
+
+**Credits:** 0.5 per image
+
+---
+
 ### 3D Model Generation (`create3DModel`)
 
 Convert a 2D image to a 3D GLB model with textures.
@@ -168,6 +182,30 @@ Create animated spritesheets from static images.
 
 **Credits:** 5 per animation
 **Processing time:** 30-90 seconds
+
+---
+
+### Motion Transfer (`transferMotion`)
+
+Transfer motion from a video onto a static sprite, producing an animated spritesheet.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `image` | Yes | URL or base64-encoded sprite image |
+| `video` | Yes | URL of the video to use as motion source (up to 4 seconds for best results) |
+| `num_frames` | No | Number of frames in the output spritesheet |
+| `target_frame_size` | No | Size of each frame in pixels |
+| `loop` | No | Trim animation for seamless loop |
+| `crop` | No | Crop frames to fit content |
+| `pixel_art_filter` | No | `none`, `small`, `medium`, `large` |
+| `margin_ratio` | No | Padding around sprite (0.0-1.0) |
+| `margin_ratio_mode` | No | `manual` (default), `none` |
+| `gif` | No | Generate an animated GIF (default: false) |
+| `individual_frames` | No | Extract individual frame images (default: false) |
+
+**Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `num_frames`, `num_cols`, `num_rows`
+
+**Credits:** 5 per transfer
 
 ---
 
