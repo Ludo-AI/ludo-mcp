@@ -205,10 +205,10 @@ Transfer motion from a video or animation preset onto a static sprite, producing
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64-encoded sprite image |
-| `video` | No | URL of the video to use as motion source (up to 4 seconds for best results). Either `video` or `preset_id` + `direction` must be provided. |
-| `preset_id` | No | ID of an animation preset (from `listAnimationPresets`). Requires `direction`. |
-| `direction` | No | Direction for the preset animation: `N`, `NE`, `E`, `SE`, `S`, `SW`, `W`, `NW` |
-| `perspective` | No | Perspective ID for the preset. Defaults to first available. |
+| `video` | No | URL of the video to use as motion source. You can use videos from the animateSprite endpoint or provide your own. Videos up to 4 seconds will produce better results. Either `video` or `preset_id` + `perspective` + `direction` must be provided. |
+| `preset_id` | No | ID of an animation preset to use instead of a video URL. Use the animation-presets endpoint to list available presets. When using a preset, `perspective` and `direction` are required. |
+| `direction` | No | Direction for the animation preset. When using a preset, `direction` is required. Values: `N`, `NE`, `E`, `SE`, `S`, `SW`, `W`, `NW` |
+| `perspective` | No | Perspective ID to use with the animation preset. When using a preset, `perspective` is required. |
 | `num_frames` | No | Number of frames in the output spritesheet |
 | `target_frame_size` | No | Size of each frame in pixels |
 | `loop` | No | Trim animation for seamless loop |
