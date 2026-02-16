@@ -8,7 +8,7 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 |----------|-------------|
 | **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal |
 | **3D Models** | Convert 2D images to GLB models with PBR textures |
-| **Animation** | Animated spritesheets from static sprites (4-64 frames), motion transfer from video |
+| **Animation** | Animated spritesheets from static sprites (4-64 frames), motion transfer from video or presets |
 | **Video** | Generate short videos from images (3-10 seconds) |
 | **Audio** | Sound effects, background music, character voices, TTS |
 
@@ -185,14 +185,30 @@ Create animated spritesheets from static images.
 
 ---
 
+### Animation Presets (`listAnimationPresets`)
+
+List available animation presets for use with motion transfer. Returns preset animations, perspectives, and directions — no video URLs are exposed.
+
+**Returns:**
+- `animations` — Array of presets with `id`, `name`, `category`, `description`, `duration`, `preview_url`
+- `perspectives` — Array with `id`, `name`, `description` (all animations support all perspectives)
+- `directions` — `["N", "NE", "E", "SE", "S", "SW", "W", "NW"]` (all animations support all directions)
+
+**Credits:** Free
+
+---
+
 ### Motion Transfer (`transferMotion`)
 
-Transfer motion from a video onto a static sprite, producing an animated spritesheet.
+Transfer motion from a video or animation preset onto a static sprite, producing an animated spritesheet.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64-encoded sprite image |
-| `video` | Yes | URL of the video to use as motion source (up to 4 seconds for best results) |
+| `video` | No | URL of the video to use as motion source (up to 4 seconds for best results). Either `video` or `preset_id` + `direction` must be provided. |
+| `preset_id` | No | ID of an animation preset (from `listAnimationPresets`). Requires `direction`. |
+| `direction` | No | Direction for the preset animation: `N`, `NE`, `E`, `SE`, `S`, `SW`, `W`, `NW` |
+| `perspective` | No | Perspective ID for the preset. Defaults to first available. |
 | `num_frames` | No | Number of frames in the output spritesheet |
 | `target_frame_size` | No | Size of each frame in pixels |
 | `loop` | No | Trim animation for seamless loop |

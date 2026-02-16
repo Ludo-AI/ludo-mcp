@@ -89,9 +89,14 @@
           "note": "generatePose with image='url', pose='Attack Ready' - use BEFORE animateSprite for best results"
         },
         {
+          "name": "List Animation Presets",
+          "description": "Browse available animation presets for motion transfer",
+          "note": "listAnimationPresets - returns animations, perspectives, and directions. Use preset_id + direction in transferMotion instead of a video URL"
+        },
+        {
           "name": "Transfer Motion to Sprite",
-          "description": "Apply motion from a video onto a different sprite",
-          "note": "transferMotion with image='sprite_url', video='video_url' - transfers animation from video onto a static sprite"
+          "description": "Apply motion from a video or preset onto a different sprite",
+          "note": "transferMotion with image='sprite_url' and either video='video_url' or preset_id + direction - transfers animation onto a static sprite"
         },
         {
           "name": "Remove Image Background",
