@@ -209,8 +209,8 @@ Transfer motion from a video or animation preset onto a static sprite, producing
 | `preset_id` | No | ID of an animation preset to use instead of a video URL. Use the animation-presets endpoint to list available presets. When using a preset, `perspective` and `direction` are required. |
 | `direction` | No | Direction for the animation preset. When using a preset, `direction` is required. Values: `N`, `NE`, `E`, `SE`, `S`, `SW`, `W`, `NW` |
 | `perspective` | No | Perspective ID to use with the animation preset. When using a preset, `perspective` is required. |
-| `num_frames` | No | Number of frames in the output spritesheet |
-| `target_frame_size` | No | Size of each frame in pixels |
+| `frames` | No | Number of frames in the output spritesheet |
+| `frame_size` | No | Size of each frame in pixels |
 | `loop` | No | Trim animation for seamless loop |
 | `crop` | No | Crop frames to fit content |
 | `pixel_art_filter` | No | `none`, `small`, `medium`, `large` |
