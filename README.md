@@ -66,8 +66,6 @@ Generate sprites, icons, backgrounds, UI assets, and textures.
 | `image_type` | Yes | `sprite`, `icon`, `screenshot`, `art`, `asset`, `sprite-vfx`, `ui_asset`, `fixed_background`, `texture`, `3d`, `generic` |
 | `art_style` | No | `Pixel Art (16-Bit)`, `Pixel Art (8-Bit)`, `Low Poly`, `Cartoonish`, `Stylized 3D`, `Flat Design`, `Anime/Manga`, `Voxel Art`, etc. |
 | `perspective` | No | `Side-Scroll`, `Top-Down`, `Isometric`, `First-Person`, `Third-Person`, `2.5D` |
-| `platform` | No | `Mobile`, `Desktop`, `Web` |
-| `genre` | No | `Hypercasual`, `Action`, `RPG`, `Puzzle`, `Platformer`, etc. |
 | `aspect_ratio` | No | `default`, `ar_1_1`, `ar_4_3`, `ar_16_9`, `ar_9_16` |
 | `n` | No | Number of variations (1-8, default: 1) |
 
