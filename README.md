@@ -175,8 +175,9 @@ Create animated spritesheets from static images.
 | `pixel_art_filter` | No | `none`, `small`, `medium`, `large` |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
+| `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
 
-**Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `num_frames`, `num_cols`, `num_rows`
+**Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`
 
 **Credits:** 5 per animation
 **Processing time:** 30-90 seconds
@@ -216,8 +217,9 @@ Transfer motion from a video or animation preset onto a static sprite, producing
 | `margin_ratio_mode` | No | `manual` (default), `none` |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
+| `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
 
-**Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `num_frames`, `num_cols`, `num_rows`
+**Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`
 
 **Credits:** 5 per transfer
 
