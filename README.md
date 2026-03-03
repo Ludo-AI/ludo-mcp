@@ -172,7 +172,6 @@ Create animated spritesheets from static images.
 | `model` | No | `standard` (default) or `new` (higher quality) |
 | `duration` | No | Standard: 1.2-3s, New: 4s |
 | `final_image` | No | Ending frame for interpolation |
-| `pixel_art_filter` | No | `none`, `small`, `medium`, `large` |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
@@ -212,7 +211,6 @@ Transfer motion from a video or animation preset onto a static sprite, producing
 | `frame_size` | No | Size of each frame in pixels |
 | `loop` | No | Trim animation for seamless loop |
 | `crop` | No | Crop frames to fit content |
-| `pixel_art_filter` | No | `none`, `small`, `medium`, `large` |
 | `margin_ratio` | No | Padding around sprite (0.0-1.0) |
 | `margin_ratio_mode` | No | `manual` (default), `none` |
 | `gif` | No | Generate an animated GIF (default: false) |
