@@ -68,6 +68,7 @@ Generate sprites, icons, backgrounds, UI assets, and textures.
 | `perspective` | No | `Side-Scroll`, `Top-Down`, `Isometric`, `First-Person`, `Third-Person`, `2.5D` |
 | `aspect_ratio` | No | `default`, `ar_1_1`, `ar_4_3`, `ar_16_9`, `ar_9_16` |
 | `n` | No | Number of variations (1-8, default: 1) |
+| `request_id` | No | Client-provided ID to retrieve results later |
 
 **Credits:** 0.5 per image
 
@@ -83,6 +84,7 @@ Modify an existing image using text instructions (smart editing).
 | `prompt` | Yes | Description of changes (e.g., "remove the background", "make it darker", "add clouds to the sky") |
 | `reference_image` | No | URL or base64 reference image for style/content guidance |
 | `n` | No | Number of variations (1-4, default: 1) |
+| `request_id` | No | Client-provided ID to retrieve results later |
 
 **Credits:** 0.5 per image
 
@@ -98,6 +100,7 @@ Generate new content while maintaining the visual style of a reference image.
 | `prompt` | Yes | Description of what to generate (e.g., "a warrior character", "a treasure chest") |
 | `image_type` | Yes | `sprite`, `icon`, `screenshot`, `art`, `asset`, `sprite-vfx`, `ui_asset`, `fixed_background`, `texture`, `3d`, `generic` |
 | `n` | No | Number of variations (1-4, default: 1) |
+| `request_id` | No | Client-provided ID to retrieve results later |
 
 **Credits:** 0.5 per image
 
@@ -113,6 +116,7 @@ Generate a new pose for an existing sprite. **Use this BEFORE `animateSprite`** 
 | `pose` | Yes | Target pose: `Idle (Front)`, `Idle (Back)`, `Walk / Run (Left)`, `Attack Ready`, `Jumping`, `Crouching`, `Flying`, `Defending / Blocking`, or any custom description |
 | `description` | No | Additional instructions to guide pose generation |
 | `n` | No | Number of variations (1-4, default: 1) |
+| `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `url`, `pose`, `motion_prompt`
 
@@ -131,6 +135,7 @@ Remove the background from an image, returning a transparent PNG.
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64-encoded image |
+| `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `url` (transparent PNG)
 
@@ -149,6 +154,7 @@ Convert a 2D image to a 3D GLB model with textures.
 | `texture_size` | No | `1024`, `2048` (default), `4096` |
 | `target_num_faces` | No | Triangle count 1,000-100,000 (default: 50,000) |
 | `high_detail_shape` | No | Enable for complex shapes (slower) |
+| `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `model_url` (GLB file) + 4 snapshot images from different angles
 
@@ -175,6 +181,7 @@ Create animated spritesheets from static images.
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
+| `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`
 
@@ -216,6 +223,7 @@ Transfer motion from a video or animation preset onto a static sprite, producing
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
+| `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`
 
@@ -234,6 +242,7 @@ Generate short videos from images.
 | `duration` | No | `3`, `5` (default), `8`, `10` seconds |
 | `model` | No | `standard` (default) or `new` |
 | `final_image` | No | Ending frame for interpolation |
+| `request_id` | No | Client-provided ID to retrieve results later |
 
 **Credits:** 3s=5, 5s=8, 8s=12, 10s=15
 
@@ -247,6 +256,7 @@ Generate game sound effects from text descriptions.
 |-----------|----------|-------------|
 | `description` | Yes | Sound description (e.g., "laser gun firing", "footsteps on gravel", "coin pickup") |
 | `duration` | No | 0-10 seconds (0 = automatic) |
+| `request_id` | No | Client-provided ID to retrieve results later |
 
 **Credits:** 3 per sound
 
@@ -260,6 +270,7 @@ Generate background music and themes.
 |-----------|----------|-------------|
 | `description` | Yes | Music description (e.g., "epic orchestral battle theme", "calm piano melody", "8-bit chiptune") |
 | `lyrics` | No | Optional lyrics for vocal tracks |
+| `request_id` | No | Client-provided ID to retrieve results later |
 
 **Credits:** 3 per track
 
@@ -274,6 +285,7 @@ Generate unique character voices.
 | `voice_description` | Yes | Character description (e.g., "gruff old warrior", "cheerful young girl") |
 | `text` | Yes | Text to speak (max 200 characters) |
 | `type` | No | `human` (default) or `non-human` |
+| `request_id` | No | Client-provided ID to retrieve results later |
 
 **Credits:** 3 per voice
 
@@ -287,6 +299,7 @@ Clone a voice from an audio sample.
 |-----------|----------|-------------|
 | `text` | Yes | Text to speak (max 1000 characters) |
 | `sample` | Yes | URL or base64 audio sample for voice cloning |
+| `request_id` | No | Client-provided ID to retrieve results later |
 
 **Credits:** 3 per generation
 
@@ -302,8 +315,98 @@ Use preset voices for text-to-speech.
 | `voice_preset_id` | Yes | `Serious woman`, `Wise woman`, `Calm woman`, `Patient man`, `Determined man`, `Deep voice man`, `Teen boy`, `Sweet girl`, etc. |
 | `emotion` | No | `Default`, `Happy`, `Sad`, `Angry`, `Fearful`, `Surprised`, `Neutral` |
 | `language` | No | `auto`, `English`, `Spanish`, `French`, `German`, `Japanese`, `Korean`, etc. |
+| `request_id` | No | Client-provided ID to retrieve results later |
 
 **Credits:** 3 per generation
+
+---
+
+### Retrieve Image Results (`getImageResults`)
+
+Retrieve your recent API-generated images.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `request_id` | No | Filter to a specific request |
+
+**Returns:** Array of image objects with `url`, `request_id`, `created_at`
+
+**Credits:** Free
+
+---
+
+### Retrieve Sprite Results (`getSpriteResults`)
+
+Retrieve your recent API-generated spritesheets.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `request_id` | No | Filter to a specific request |
+
+**Returns:** Array of spritesheet objects with `request_id`, `created_at`
+
+**Credits:** Free
+
+---
+
+### Retrieve Video Results (`getVideoResults`)
+
+Retrieve your recent API-generated videos.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `request_id` | No | Filter to a specific request |
+
+**Returns:** Array of video objects with `url`, `request_id`, `created_at`
+
+**Credits:** Free
+
+---
+
+### Retrieve Audio Results (`getAudioResults`)
+
+Retrieve your recent API-generated audio.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `request_id` | No | Filter to a specific request |
+
+**Returns:** Array of audio objects with `request_id`, `created_at`
+
+**Credits:** Free
+
+---
+
+### Retrieve 3D Model Results (`get3DModelResults`)
+
+Retrieve your recent API-generated 3D models.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `request_id` | No | Filter to a specific request |
+
+**Returns:** Array of 3D asset objects with `request_id`, `created_at`
+
+**Credits:** Free
+
+---
+
+## Async Usage
+
+You can use `request_id` to build fire-and-forget workflows. Tag any generation request with a `request_id`, then poll the corresponding results endpoint to pick up the output when it's ready — no need to keep the connection open.
+
+1. Pass a `request_id` in your generation request
+2. Poll the corresponding results endpoint to retrieve the output
+
+```
+# Fire off a sprite animation
+animateSprite with request_id="my-anim-001", initial_image="url", motion_prompt="walking"
+
+# Retrieve the result whenever you're ready
+getSpriteResults with request_id="my-anim-001"
+```
+
+All generation endpoints accept an optional `request_id` parameter. Results are available for 7 days and each results endpoint returns up to 100 recent API-generated assets.
 
 ---
 

@@ -102,6 +102,11 @@
           "name": "Remove Image Background",
           "description": "Remove the background from a sprite or image",
           "note": "removeImageBackground with image='url' - returns a transparent PNG"
+        },
+        {
+          "name": "Async Generation",
+          "description": "Fire-and-forget workflow: tag a request and poll for results later",
+          "note": "Pass request_id in any generation call, then use getImageResults/getSpriteResults/getVideoResults/getAudioResults/get3DModelResults with that request_id to retrieve results"
         }
       ],
       "keywords": [
@@ -132,7 +137,9 @@
         "Supports multiple art styles: Pixel Art, Low Poly, Cartoonish, Stylized 3D, and more",
         "3D models output as GLB with optional PBR textures",
         "Spritesheets support variable frame counts (4-64) and sizes (64-256px)",
-        "Long-running operations (3D models, animations) may take 60-120 seconds"
+        "Long-running operations (3D models, animations) may take 60-120 seconds",
+        "All generation endpoints accept an optional request_id for async result retrieval",
+        "Results endpoints (getImageResults, getSpriteResults, etc.) are free and return up to 100 recent results"
       ]
     }
   }
