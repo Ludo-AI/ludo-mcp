@@ -410,6 +410,12 @@ All generation endpoints accept an optional `request_id` parameter. Results are 
 
 ---
 
+## Asset URL Expiration
+
+All generated asset URLs (images, spritesheets, videos, audio, 3D models) are temporary and expire after **7 days**. If you need to keep an asset, download it before it expires.
+
+---
+
 ## Example Prompts
 
 ### Creating Game Assets

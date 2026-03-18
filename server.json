@@ -139,7 +139,8 @@
         "Spritesheets support variable frame counts (4-64) and sizes (64-256px)",
         "Long-running operations (3D models, animations) may take 60-120 seconds",
         "All generation endpoints accept an optional request_id for async result retrieval",
-        "Results endpoints (getImageResults, getSpriteResults, etc.) are free and return up to 100 recent results"
+        "Results endpoints (getImageResults, getSpriteResults, etc.) are free and return up to 100 recent results",
+        "All generated asset URLs are temporary and expire after 7 days — download assets before they expire"
       ]
     }
   }
