@@ -151,9 +151,8 @@ Convert a 2D image to a 3D GLB model with textures.
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64-encoded image |
 | `texture_type` | No | `pbr` (default), `simple`, `none` |
-| `texture_size` | No | `1024`, `2048` (default), `4096` |
-| `target_num_faces` | No | Triangle count 1,000-100,000 (default: 50,000) |
-| `high_detail_shape` | No | Enable for complex shapes (slower) |
+| `texture_size` | No | `1024`, `2048` (default) |
+| `target_num_faces` | No | Triangle count 1,000-200,000 (default: 50,000) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `model_url` (GLB file) + 4 snapshot images from different angles
