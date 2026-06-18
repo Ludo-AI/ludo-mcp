@@ -89,6 +89,11 @@
           "note": "generatePose with image='url', pose='Attack Ready' - use BEFORE animateSprite for best results"
         },
         {
+          "name": "Rotate Sprite View",
+          "description": "Turn a sprite to a new camera angle, keeping the same pose",
+          "note": "rotateSprite with image='url', camera_rotation=90 (right side) and optional camera_elevation - generates directional/turnaround views"
+        },
+        {
           "name": "List Animation Presets",
           "description": "Browse available animation presets for motion transfer",
           "note": "listAnimationPresets - returns animations, perspectives, and directions. Use preset_id + perspective + direction in transferMotion instead of a video URL"
@@ -133,7 +138,7 @@
       "license": "Proprietary",
       "publisher": "Ludo AI",
       "notes": [
-        "Credit-based pricing: images (0.5), 3D models (3), animations (5), videos (5-15), audio (3)",
+        "Credit-based pricing: images (0.5 each), 3D models (3), sprite animations (from 4, varies by duration/model), motion transfer (4-16 by duration), videos (1 credit/sec on the standard model), audio: sound effects/ambiance (2), music/transform (3), voice/speech (1)",
         "Supports multiple art styles: Pixel Art, Low Poly, Cartoonish, Stylized 3D, and more",
         "3D models output as GLB with optional PBR textures",
         "Spritesheets support variable frame counts (4-64) and sizes (64-256px)",

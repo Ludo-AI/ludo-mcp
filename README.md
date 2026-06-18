@@ -128,6 +128,24 @@ Generate a new pose for an existing sprite. **Use this BEFORE `animateSprite`** 
 
 ---
 
+### Rotate Sprite (`rotateSprite`)
+
+Rotate the camera view of an existing sprite to a new angle, keeping the same character and pose. Useful for generating turnaround / directional views of a sprite.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `image` | Yes | URL or base64-encoded sprite image |
+| `camera_rotation` | Yes | Camera azimuth in degrees: `0` (front), `45` (front-right), `90` (right side), `135` (back-right), `180` (back), `-135` (back-left), `-90` (left side), `-45` (front-left) |
+| `camera_elevation` | No | Camera tilt in degrees: `0` (eye-level), `30` (elevated), `60` (high-angle). Omit to keep the sprite's current elevation. |
+| `n` | No | Number of variations (1-4, default: 1) |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+**Returns:** `url`, `camera_rotation`, `camera_elevation`
+
+**Credits:** 0.5 per image
+
+---
+
 ### Remove Background (`removeImageBackground`)
 
 Remove the background from an image, returning a transparent PNG.
@@ -184,7 +202,7 @@ Create animated spritesheets from static images.
 
 **Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`
 
-**Credits:** 5 per animation
+**Credits:** Varies by duration and model. Standard model: 1.9 credits/sec with a 4-credit minimum (e.g. ~1.2s = 4, 3s ≈ 5.7, 4s ≈ 7.6). Higher-quality models cost more per second.
 **Processing time:** 30-90 seconds
 
 ---
@@ -226,7 +244,7 @@ Transfer motion from a video or animation preset onto a static sprite, producing
 
 **Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`
 
-**Credits:** 5 per transfer
+**Credits:** Varies by duration: 4 credits/sec with a 4-credit minimum (default 1.5s = 6, up to 16 at 4s)
 
 ---
 
@@ -243,7 +261,7 @@ Generate short videos from images.
 | `final_image` | No | Ending frame for interpolation |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Credits:** 3s=5, 5s=8, 8s=12, 10s=15
+**Credits:** Varies by duration and model. Standard model: 1 credit/sec (3s = 3, 5s = 5, 8s = 8, 10s = 10). Higher-quality models cost more per second.
 
 ---
 
@@ -257,7 +275,22 @@ Generate game sound effects from text descriptions.
 | `duration` | No | 0-10 seconds (0 = automatic) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Credits:** 3 per sound
+**Credits:** 2 per sound
+
+---
+
+### Ambiance Generation (`createAmbiance`)
+
+Generate ambient soundscapes and background atmospheres from text descriptions.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `description` | Yes | Ambiance description (e.g., "windy forest at dusk", "busy medieval market", "spaceship engine hum") |
+| `duration` | No | Duration in seconds (0 = automatic, based on the description) |
+| `augment_prompt` | No | Augment the prompt behind the scenes (default: true) |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+**Credits:** 2 per generation
 
 ---
 
@@ -275,6 +308,23 @@ Generate background music and themes.
 
 ---
 
+### Audio Transform (`createAudioTransform`)
+
+Remix or transform an existing audio sample using a text prompt.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `sample` | Yes | URL or base64-encoded source audio sample to remix (15MB max) |
+| `prompt` | Yes | Description guiding the remix (e.g., "make it sound like an 80s synthwave track") |
+| `duration` | No | Duration in seconds: `0` (automatic, matches the source) or `10`–`180` in steps of 10 |
+| `modification_strength` | No | How strongly the source is modified (0 = close to original) |
+| `augment_prompt` | No | Augment the prompt behind the scenes (default: true) |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+**Credits:** 3 per generation
+
+---
+
 ### Voice Generation (`createVoice`)
 
 Generate unique character voices.
@@ -286,7 +336,7 @@ Generate unique character voices.
 | `type` | No | `human` (default) or `non-human` |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Credits:** 3 per voice
+**Credits:** 1 per voice
 
 ---
 
@@ -300,7 +350,7 @@ Clone a voice from an audio sample.
 | `sample` | Yes | URL or base64 audio sample for voice cloning |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Credits:** 3 per generation
+**Credits:** 1 per generation
 
 ---
 
@@ -316,7 +366,7 @@ Use preset voices for text-to-speech.
 | `language` | No | `auto`, `English`, `Spanish`, `French`, `German`, `Japanese`, `Korean`, etc. |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Credits:** 3 per generation
+**Credits:** 1 per generation
 
 ---
 
