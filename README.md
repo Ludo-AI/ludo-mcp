@@ -9,7 +9,7 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 | **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal |
 | **3D Models** | Convert 2D images to GLB models with PBR textures |
 | **Animation** | Animated spritesheets from static sprites (4-64 frames), motion transfer from video or presets |
-| **Video** | Generate short videos from images (3-10 seconds) |
+| **Video** | Generate short videos from images (1-15 seconds, varies by model) |
 | **Audio** | Sound effects, background music, character voices, TTS |
 
 ## Quick Start
@@ -58,13 +58,13 @@ Add to your MCP settings in Cursor preferences:
 
 ### Image Generation (`createImage`)
 
-Generate sprites, icons, backgrounds, UI assets, and textures.
+Generate sprites, icons, backgrounds, UI assets, and textures from a text prompt alone (no source image needed). To match the art style of an existing image use `generateWithStyle`, to modify an existing image use `editImage`, and to cut out a subject use `removeBackground`.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `prompt` | Yes | Detailed description of the image |
-| `image_type` | Yes | `sprite`, `icon`, `screenshot`, `art`, `asset`, `sprite-vfx`, `ui_asset`, `fixed_background`, `texture`, `3d`, `generic` |
-| `art_style` | No | `Pixel Art (16-Bit)`, `Pixel Art (8-Bit)`, `Low Poly`, `Cartoonish`, `Stylized 3D`, `Flat Design`, `Anime/Manga`, `Voxel Art`, etc. |
+| `image_type` | Yes | `sprite`, `icon`, `screenshot`, `art`, `asset`, `sprite-vfx`, `ui_asset`, `fixed_background`, `side_scrolling_background`, `texture`, `horizontal_tile`, `tile`, `item-icon`, `portrait`, `card-art`, `splash`, `3d`, `generic` |
+| `art_style` | No | `8-Bit`, `16-Bit`, `32-Bit`, `Hi-Bit`, `Low Poly`, `Stylized 3D`, `Voxel Art`, `Flat Design`, `Anime/Manga`, `Western Cartoon`, `Hand-Painted`, `Photorealistic 3D`, `Cel-Shaded`, etc. |
 | `perspective` | No | `Side-Scroll`, `Top-Down`, `Isometric`, `First-Person`, `Third-Person`, `2.5D` |
 | `aspect_ratio` | No | `default`, `ar_1_1`, `ar_4_3`, `ar_16_9`, `ar_9_16` |
 | `n` | No | Number of variations (1-8, default: 1) |
@@ -113,7 +113,7 @@ Generate a new pose for an existing sprite. **Use this BEFORE `animateSprite`** 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64-encoded sprite image |
-| `pose` | Yes | Target pose: `Idle (Front)`, `Idle (Back)`, `Walk / Run (Left)`, `Attack Ready`, `Jumping`, `Crouching`, `Flying`, `Defending / Blocking`, or any custom description |
+| `pose` | Yes | Target pose: `Idle (Front)`, `Idle (Back)`, `Idle (Left Facing)`, `Idle (Right Facing)`, `Walk (Left)`, `Walk (Right)`, `Run (Left)`, `Run (Right)`, `Crouching`, `Crawling`, `Sitting`, `Attack Ready`, `Jump Preparation`, `Defending / Blocking`, `Flying`, `Sleeping`, or `Other` (with a free-text `description`) |
 | `description` | No | Additional instructions to guide pose generation |
 | `n` | No | Number of variations (1-4, default: 1) |
 | `request_id` | No | Client-provided ID to retrieve results later |
@@ -121,7 +121,7 @@ Generate a new pose for an existing sprite. **Use this BEFORE `animateSprite`** 
 **Returns:** `url`, `pose`, `motion_prompt`
 
 **Example workflow:**
-1. Generate a "Walk / Run (Left)" pose with `generatePose`
+1. Generate a "Walk (Left)" pose with `generatePose`
 2. Use the returned `motion_prompt` directly in `animateSprite` for optimal animation results
 
 **Credits:** 0.5 per image
@@ -146,16 +146,18 @@ Rotate the camera view of an existing sprite to a new angle, keeping the same ch
 
 ---
 
-### Remove Background (`removeImageBackground`)
+### Remove Background (`removeBackground`)
 
-Remove the background from an image, returning a transparent PNG.
+Remove the background from a single image, returning the subject isolated on a transparent background. For broader edits (not just cutting out the subject), use `editImage` instead.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64-encoded image |
+| `crop` | No | Trim the result to the subject's bounding box (default: false) |
+| `creative_edit` | No | Higher-quality output that may not match the input pixel-for-pixel (default: true) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** `url` (transparent PNG)
+**Returns:** a single result with `url` (transparent PNG)
 
 **Credits:** 0.5 per image
 
@@ -190,10 +192,14 @@ Create animated spritesheets from static images.
 | `motion_prompt` | Yes | Animation description (e.g., "walking cycle", "idle breathing", "attack slash") |
 | `image_type` | No | `sprite`, `sprite-vfx`, `ui_asset` |
 | `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
-| `frame_size` | No | `64`, `128`, `256` (default), `0` (max resolution) |
+| `frame_size` | No | `32`, `64`, `96`, `128`, `192`, `256` (default), `384`, `0` (max resolution), `-1` (AI 1.5× upscale), `-9` (match input frame) |
 | `loop` | No | Seamless loop (default: true) |
-| `model` | No | `standard` (default) or `new` (higher quality) |
-| `duration` | No | Standard: 1.2-3s, New: 4s |
+| `crop` | No | Crop frames to fit content; smaller spritesheets but inconsistent frame sizes |
+| `margin_ratio` | No | Padding around the sprite as a ratio 0.0–1.0 (only used when `margin_ratio_mode` is `manual`) |
+| `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
+| `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
+| `model` | No | `blitz` (default), `eagle`, `eagle-audio`, `chaos`. Legacy aliases: `standard`→`blitz`, `new`→`chaos` |
+| `duration` | No | Depends on model — Blitz: `1.2`–`4`s (1.2, 1.5, 2, 2.5, 3, 3.5, 4); Eagle / Eagle with Audio: `1`–`4`s; Chaos: `4`s |
 | `final_image` | No | Ending frame for interpolation |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
@@ -256,8 +262,8 @@ Generate short videos from images.
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64 starting frame |
 | `prompt` | Yes | Motion description (e.g., "camera zooms in", "character walks forward") |
-| `duration` | No | `3`, `5` (default), `8`, `10` seconds |
-| `model` | No | `standard` (default) or `new` |
+| `duration` | No | Depends on model (defaults to the model's shortest) — Blitz: `2`–`12`s; Eagle / Eagle with Audio: `1`–`15`s; Chaos: `4`–`12`s |
+| `model` | No | `blitz` (default), `eagle`, `eagle-audio`, `chaos`. Legacy aliases: `standard`→`blitz`, `new`→`chaos` |
 | `final_image` | No | Ending frame for interpolation |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
@@ -440,22 +446,23 @@ Retrieve your recent API-generated 3D models.
 
 ---
 
-## Async Usage
+## How Generation Calls Work
 
-You can use `request_id` to build fire-and-forget workflows. Tag any generation request with a `request_id`, then poll the corresponding results endpoint to pick up the output when it's ready — no need to keep the connection open.
+Every generation tool is **synchronous**: the call blocks until the asset is ready and returns the result (with its URLs) directly in the response. There is no separate polling step, and dropping the connection before the call returns cancels the request. Long-running operations such as 3D models and animations can take 30–120 seconds, so allow a generous client-side timeout.
 
-1. Pass a `request_id` in your generation request
-2. Poll the corresponding results endpoint to retrieve the output
+## Retrieving Results Later
+
+Every generation tool also accepts an optional `request_id`. This does **not** make the call asynchronous — it tags the result so you can fetch it again afterwards from the matching results endpoint (for example from a different session, or to list everything tied to one request). The result is persisted only after the synchronous call has completed successfully.
 
 ```
-# Fire off a sprite animation
+# Generate a sprite animation — this call blocks and returns the spritesheet directly
 animateSprite with request_id="my-anim-001", initial_image="url", motion_prompt="walking"
 
-# Retrieve the result whenever you're ready
+# Later, re-fetch that same result (e.g. in another session) by its request_id
 getSpriteResults with request_id="my-anim-001"
 ```
 
-All generation endpoints accept an optional `request_id` parameter. Results are available for 7 days and each results endpoint returns up to 100 recent API-generated assets.
+Results are available for 7 days, and each results endpoint is free and returns up to 100 recent API-generated assets.
 
 ---
 
