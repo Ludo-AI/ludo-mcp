@@ -554,7 +554,9 @@ Results are available for 7 days, and each results endpoint is free and returns 
 
 ## Asset URL Expiration
 
-All generated asset URLs (images, spritesheets, videos, audio, 3D models) are temporary and expire after **7 days**. If you need to keep an asset, download it before it expires.
+All generated asset URLs (images, spritesheets, videos, audio, 3D models) point to Google Cloud Storage links that expire after **7 days**. Any asset that needs to outlive that window — especially assets destined for production use — must be downloaded and saved locally (or re-uploaded to permanent storage) right away. Never store the returned URLs as permanent references.
+
+The server also announces this to MCP clients via its `instructions` field during the initialize handshake, so models connected through clients that surface server instructions will be reminded automatically.
 
 ---
 

@@ -170,7 +170,7 @@
         "Long-running operations (3D models, animations) may take 60-120 seconds",
         "Generation endpoints are synchronous: the call blocks until the asset is ready and returns it directly (no polling). They also accept an optional request_id to tag the result for later re-fetching via the results endpoints",
         "Results endpoints (getImageResults, getSpriteResults, etc.) are free and return up to 100 recent results",
-        "All generated asset URLs are temporary and expire after 7 days — download assets before they expire"
+        "All generated asset URLs are temporary Google Cloud Storage links that expire after 7 days — download and save assets locally (or re-upload to permanent storage) before they expire, especially anything destined for production use; never store the returned URLs as permanent references"
       ]
     }
   }
