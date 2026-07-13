@@ -8,8 +8,8 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 |----------|-------------|
 | **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal |
 | **3D Models** | Convert 2D images to GLB models with PBR textures |
-| **Animation** | Animated spritesheets from static sprites (4-64 frames), motion transfer from video or presets |
-| **Video** | Generate short videos from images (1-15 seconds, varies by model) |
+| **Animation** | Animated spritesheets from static sprites (4-64 frames), motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing) |
+| **Video** | Generate short videos from images or reference images (1-15 seconds, varies by model), prompt-driven video editing, 2x upscaling |
 | **Audio** | Sound effects, background music, character voices, TTS |
 
 ## Quick Start
@@ -195,7 +195,9 @@ Create animated spritesheets from static images.
 | `frame_size` | No | `32`, `64`, `96`, `128`, `192`, `256` (default), `384`, `0` (max resolution), `-1` (AI 1.5× upscale), `-9` (match input frame) |
 | `loop` | No | Seamless loop (default: true) |
 | `crop` | No | Crop frames to fit content; smaller spritesheets but inconsistent frame sizes |
-| `margin_ratio` | No | Padding around the sprite as a ratio 0.0–1.0 (only used when `margin_ratio_mode` is `manual`) |
+| `margin_ratio_horizontal` | No | Horizontal padding around the sprite as a ratio 0.0–1.0 (only used when `margin_ratio_mode` is `manual`). Useful for animations that extend sideways, e.g. sword slashes or punches |
+| `margin_ratio_vertical` | No | Vertical padding around the sprite as a ratio 0.0–1.0 (only used when `margin_ratio_mode` is `manual`). Useful for animations that extend up or down, e.g. jumps |
+| `margin_ratio` | No | *Deprecated* — uniform padding on both axes, equivalent to setting both per-axis params to the same value. Cannot be combined with the per-axis params (fails with 400) |
 | `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
 | `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
 | `model` | No | `blitz` (default), `eagle`, `eagle-audio`, `chaos`. Legacy aliases: `standard`→`blitz`, `new`→`chaos` |
@@ -241,16 +243,47 @@ Transfer motion from a video or animation preset onto a static sprite, producing
 | `frame_size` | No | Size of each frame in pixels |
 | `loop` | No | Trim animation for seamless loop |
 | `crop` | No | Crop frames to fit content |
-| `margin_ratio` | No | Padding around sprite (0.0-1.0) |
+| `margin_ratio_horizontal` | No | Horizontal padding around the sprite (0.0–1.0). Useful for animations that extend sideways, e.g. sword slashes or punches |
+| `margin_ratio_vertical` | No | Vertical padding around the sprite (0.0–1.0). Useful for animations that extend up or down, e.g. jumps |
+| `margin_ratio` | No | *Deprecated* — uniform padding on both axes (0.0–1.0, default 0.15 when no margin is given). Cannot be combined with the per-axis params (fails with 400) |
 | `margin_ratio_mode` | No | `manual` (default), `none` |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
+| `model` | No | `tango` (default) — most powerful for demanding use cases; `forge` — cost-effective for simple motion, works best with presets and matching poses |
+| `duration` | No | Animation length in seconds: `1`–`4` (default 1.5). If the reference video is longer, it is compressed to this duration |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`
 
-**Credits:** Varies by duration: 4 credits/sec with a 4-credit minimum (default 1.5s = 6, up to 16 at 4s)
+**Credits:** Varies by duration and model, 4-credit minimum. Tango: 4 credits/sec (default 1.5s = 6, up to 16 at 4s); Forge: 2 credits/sec (1.5s = 4, up to 8 at 4s)
+
+---
+
+### Edit Spritesheet (`editSpritesheet`)
+
+Edit a spritesheet you previously generated: re-prompt its animation, outpaint beyond the frame, or repair a bad loop. Pass back the `spritesheet_url` you received from `animateSprite`, `transferMotion`, or an earlier edit — it must be a spritesheet you generated in the last 7 days (external URLs are not accepted).
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `spritesheet_url` | Yes | URL of a spritesheet you generated in the last 7 days |
+| `edit_mode` | No | `prompt` (default) — re-prompt the animation; `outpaint` — extend beyond the frame; `fix_loop` — repair a bad loop |
+| `prompt` | No | Edit instruction. Required for `prompt` mode, optional for `outpaint`, not accepted for `fix_loop` |
+| `images` | No | Up to 5 reference images (URL or base64) to guide the edit |
+| `duration` | No | Output length in seconds: `1`–`4`. Defaults to the source spritesheet's duration |
+| `model` | No | `forge` (default) |
+| `crop` | No | Crop frames to fit content |
+| `loop` | No | Trim animation for seamless loop (default: true) |
+| `frames` | No | Frames in the output spritesheet: `4`, `9`, `16`, `25`, `36`, `49`, `64`. Defaults to the source's frame count |
+| `frame_size` | No | Frame size in pixels: `32`–`384`, or `0` for max resolution. Defaults to the source's frame size |
+| `gif` | No | Generate an animated GIF (default: false) |
+| `individual_frames` | No | Extract individual frame images (default: false) |
+| `spritesheet_with_background` | No | Also return the spritesheet with background intact (default: false) |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...)
+
+**Credits:** Varies by duration: 2 credits/sec with a 4-credit minimum (3s = 6, 4s = 8)
 
 ---
 
@@ -268,6 +301,59 @@ Generate short videos from images.
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Credits:** Varies by duration and model. Standard model: 1 credit/sec (3s = 3, 5s = 5, 8s = 8, 10s = 10). Higher-quality models cost more per second.
+
+---
+
+### Video from References (`createVideoFromReferences`)
+
+Generate a video from 1-5 reference images and a text prompt. Unlike `createVideo`, which animates a single source image, this composes a new scene that borrows characters, objects, and style from the references.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `prompt` | Yes | Text description of the video to generate |
+| `images` | Yes | 1 to 5 reference images (URL or base64) |
+| `duration` | No | Video length in seconds: `1`–`15` (default 5) |
+| `model` | No | `eagle` (default), `eagle-audio` (adds a generated audio track) |
+| `aspect_ratio` | No | `default` (model chooses), `ar_1_1`, `ar_16_9`, `ar_9_16`, `ar_4_3`, `ar_3_4`, `ar_21_9` |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+**Returns:** `url`, `duration`, `has_audio`
+
+**Credits:** Varies by duration and model. Eagle: 1.5 credits/sec (5s = 7.5); Eagle with Audio: 2 credits/sec (5s = 10)
+
+---
+
+### Edit Video (`editVideo`)
+
+Edit a video you previously generated with a text prompt and optional reference images (video-to-video). Pass back the `url` you received from `createVideo`, `createVideoFromReferences`, or an earlier edit — it must be a video you generated in the last 7 days (external URLs are not accepted).
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `video` | Yes | URL of a video you generated in the last 7 days |
+| `prompt` | Yes | Edit instruction describing the desired change |
+| `images` | No | Up to 5 reference images (URL or base64) to guide the edit |
+| `duration` | No | Output length in seconds: `1`–`15`. Defaults to the source video's duration |
+| `model` | No | `eagle` (default) |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+**Returns:** `url`, `duration`, `has_audio`
+
+**Credits:** Varies by duration: 2 credits/sec (5s = 10)
+
+---
+
+### Upscale Video (`upscaleVideo`)
+
+Upscale a video you previously generated to twice its resolution (2x). Pass back the `url` you received from `createVideo`, `createVideoFromReferences`, or `editVideo` — it must be a video you generated in the last 7 days (external URLs are not accepted). Only videos below 960x960 pixels can be upscaled; larger sources are rejected.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `video` | Yes | URL of a video you generated in the last 7 days, below 960x960 pixels |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+**Returns:** `url`, `duration`, `has_audio`
+
+**Credits:** Flat rate by duration, independent of model: 0.2 credits/sec (5s = 1)
 
 ---
 

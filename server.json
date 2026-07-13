@@ -7,7 +7,7 @@
     "url": "https://github.com/Ludo-AI/ludo-mcp",
     "source": "github"
   },
-  "version": "0.9.2",
+  "version": "0.10.0",
   "websiteUrl": "https://ludo.ai",
   "remotes": [
     {
@@ -104,9 +104,34 @@
           "note": "transferMotion with image='sprite_url' and either video='video_url' or preset_id + perspective + direction - transfers animation onto a static sprite"
         },
         {
+          "name": "Control Animation Margins Per Axis",
+          "description": "Give wide animations room to move without wasting vertical space",
+          "note": "animateSprite or transferMotion with margin_ratio_mode='manual', margin_ratio_horizontal=0.4, margin_ratio_vertical=0.05 - ideal for sword slashes/punches (wide) or jumps (tall). Don't combine with the deprecated uniform margin_ratio"
+        },
+        {
           "name": "Remove Image Background",
           "description": "Remove the background from a sprite or image",
           "note": "removeBackground with image='url' - returns a single transparent PNG"
+        },
+        {
+          "name": "Edit a Generated Spritesheet",
+          "description": "Re-prompt, outpaint, or fix the loop of a spritesheet you generated",
+          "note": "editSpritesheet with spritesheet_url='<url from animateSprite/transferMotion>' and edit_mode='prompt' + prompt='make the armor golden', or edit_mode='fix_loop' (no prompt) - the URL must be from your own generation in the last 7 days"
+        },
+        {
+          "name": "Compose Video from References",
+          "description": "Generate a video scene borrowing characters and style from up to 5 reference images",
+          "note": "createVideoFromReferences with prompt='the knight duels the dragon' and images=['url1','url2'] - optional aspect_ratio and eagle-audio model for a generated soundtrack"
+        },
+        {
+          "name": "Edit a Generated Video",
+          "description": "Modify a video you generated with a text instruction",
+          "note": "editVideo with video='<url from createVideo>' and prompt='make it night time, add rain' - optionally guide with reference images; the URL must be from your own generation in the last 7 days"
+        },
+        {
+          "name": "Upscale a Generated Video",
+          "description": "Double the resolution of a low-res video you generated",
+          "note": "upscaleVideo with video='<url from createVideo/createVideoFromReferences/editVideo>' - 2x upscale for videos below 960x960 pixels, flat 0.2 credits/sec; the URL must be from your own generation in the last 7 days"
         },
         {
           "name": "Retrieve Results Later",
@@ -138,7 +163,7 @@
       "license": "Proprietary",
       "publisher": "Ludo AI",
       "notes": [
-        "Credit-based pricing: images (0.5 each), 3D models (3), sprite animations (from 4, varies by duration/model), motion transfer (4-16 by duration), videos (1 credit/sec on the standard model), audio: sound effects/ambiance (2), music/transform (3), voice/speech (1)",
+        "Credit-based pricing: images (0.5 each), 3D models (3), sprite animations (from 4, varies by duration/model), motion transfer (from 4, varies by duration/model), spritesheet edits (2/sec, min 4), reference videos (1.5-2/sec by model), video edits (2/sec), video upscaling (0.2/sec), videos (1 credit/sec on the standard model), audio: sound effects/ambiance (2), music/transform (3), voice/speech (1)",
         "Supports multiple art styles: Pixel Art, Low Poly, Cartoonish, Stylized 3D, and more",
         "3D models output as GLB with optional PBR textures",
         "Spritesheets support variable frame counts (4-64) and sizes (64-256px)",
