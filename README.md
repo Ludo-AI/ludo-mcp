@@ -7,7 +7,7 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 | Category | Capabilities |
 |----------|-------------|
 | **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal |
-| **3D Models** | Convert 2D images to GLB models with PBR textures |
+| **3D Models** | Convert 2D images to GLB models with PBR textures, auto-rig models (skeleton + skin weights), text-driven skeletal animation |
 | **Animation** | Animated spritesheets from static sprites (4-64 frames), motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing) |
 | **Video** | Generate short videos from images or reference images (1-15 seconds, varies by model), prompt-driven video editing, 2x upscaling |
 | **Audio** | Sound effects, background music, character voices, TTS |
@@ -178,6 +178,43 @@ Convert a 2D image to a 3D GLB model with textures.
 **Returns:** `model_url` (GLB file) + 4 snapshot images from different angles
 
 **Credits:** 3 per model
+**Processing time:** 60-120 seconds
+
+---
+
+### Rig 3D Model (`rigModel`)
+
+Generate a skeleton and skin weights for an existing 3D model so it can be animated. Non-destructive to the geometry — it returns a new rigged GLB. Rig a model **before** using `animate3DModel`.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `model` | Yes | URL or base64-encoded GLB to rig |
+| `rig_type` | No | Skeleton style prior: `general` (default, works for any asset), `humanoid` (anime-style characters, densest skeleton), `game` (classic game-character rig) |
+| `request_id` | No | Optional client-provided identifier for this request |
+
+**Returns:** `model_url` (rigged GLB — skeleton + skin weights baked in), `rigged` (`true`)
+
+**Credits:** 5 per rig
+**Processing time:** 60-120 seconds
+
+---
+
+### Animate 3D Model (`animate3DModel`)
+
+Generate text-driven skeletal animations for an **already-rigged** 3D model (rig it first with `rigModel`). Animation quality is hit-or-miss, so several candidates are returned for you to choose from. Each candidate is a standalone animation-only GLB (skeleton + one clip, **no mesh**) plus an mp4 preview — pick the best one and fuse it onto your model in a game engine or three.js.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `model` | Yes | URL or base64-encoded **rigged** GLB to animate (rig it first with `rigModel`) |
+| `prompt` | Yes | Desired motion (e.g., "walking", "swinging an axe", "waving hello") |
+| `mode` | No | Animation representation: `rot_trans` (default, per-bone rotation + translation, most faithful) or `rot_only` (rotation + root translation only — for retargeting to other skeletons / engine pipelines that ignore bone translation) |
+| `num_variants` | No | Number of candidate animations to generate (1-8, default: 4) |
+| `augment_prompt` | No | Rewrite the prompt into a detailed motion caption behind the scenes (default: true) |
+| `request_id` | No | Optional client-provided identifier for this request |
+
+**Returns:** `animations` — an array of candidates, each with `clip_name`, `glb_url` (animation-only GLB), `preview_url` (mp4), `mode`, `seed`, `motion`, `fit_rmse`
+
+**Credits:** 5 per generation (one charge returns all variants)
 **Processing time:** 60-120 seconds
 
 ---

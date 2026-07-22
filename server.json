@@ -2,12 +2,12 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "ai.ludo/game-assets",
   "title": "Ludo AI Game Assets",
-  "description": "Generate game assets using AI: sprites, icons, backgrounds, 3D models (GLB), animated spritesheets, videos, sound effects, music, and character voices. Supports multiple art styles including pixel art, low poly, and stylized 3D.",
+  "description": "Generate game assets using AI: sprites, icons, backgrounds, 3D models (GLB) with auto-rigging and text-driven skeletal animation, animated spritesheets, videos, sound effects, music, and character voices. Supports multiple art styles including pixel art, low poly, and stylized 3D.",
   "repository": {
     "url": "https://github.com/Ludo-AI/ludo-mcp",
     "source": "github"
   },
-  "version": "0.10.0",
+  "version": "0.11.0",
   "websiteUrl": "https://ludo.ai",
   "remotes": [
     {
@@ -42,6 +42,16 @@
           "name": "Convert Sprite to 3D Model",
           "description": "Transform a 2D sprite into a 3D GLB model with PBR textures",
           "note": "create3DModel with texture_type='pbr' returns model_url (.glb) and 4 snapshot images"
+        },
+        {
+          "name": "Rig a 3D Model",
+          "description": "Add a skeleton to a GLB so it can be animated",
+          "note": "rigModel with model='<glb url>' and optional rig_type='humanoid' returns a rigged model_url (skeleton + skin weights baked in) — run this before animate3DModel"
+        },
+        {
+          "name": "Animate a 3D Model",
+          "description": "Generate text-driven skeletal animations for a rigged model",
+          "note": "animate3DModel with model='<rigged glb url>' and prompt='walking' returns several candidate clips — each a standalone animation-only GLB plus an mp4 preview — to pick from and fuse onto your model. Rig the model first with rigModel"
         },
         {
           "name": "Create Walking Animation",
@@ -146,6 +156,8 @@
         "pixel-art",
         "3d-models",
         "glb",
+        "rigging",
+        "skeletal-animation",
         "animation",
         "spritesheet",
         "sound-effects",
@@ -163,9 +175,10 @@
       "license": "Proprietary",
       "publisher": "Ludo AI",
       "notes": [
-        "Credit-based pricing: images (0.5 each), 3D models (3), sprite animations (from 4, varies by duration/model), motion transfer (from 4, varies by duration/model), spritesheet edits (2/sec, min 4), reference videos (1.5-2/sec by model), video edits (2/sec), video upscaling (0.2/sec), videos (1 credit/sec on the standard model), audio: sound effects/ambiance (2), music/transform (3), voice/speech (1)",
+        "Credit-based pricing: images (0.5 each), 3D models (3), 3D model rigging (5), 3D model animation (5, returns multiple candidates), sprite animations (from 4, varies by duration/model), motion transfer (from 4, varies by duration/model), spritesheet edits (2/sec, min 4), reference videos (1.5-2/sec by model), video edits (2/sec), video upscaling (0.2/sec), videos (1 credit/sec on the standard model), audio: sound effects/ambiance (2), music/transform (3), voice/speech (1)",
         "Supports multiple art styles: Pixel Art, Low Poly, Cartoonish, Stylized 3D, and more",
         "3D models output as GLB with optional PBR textures",
+        "3D models can be auto-rigged (rigModel: adds a skeleton + skin weights) and then given text-driven skeletal animations (animate3DModel). Rig before animating. animate3DModel returns several candidate clips — each a standalone animation-only GLB (skeleton + one clip, no mesh) plus an mp4 preview — for the caller to pick from and fuse onto the model in their engine/three.js",
         "Spritesheets support variable frame counts (4-64) and sizes (64-256px)",
         "Long-running operations (3D models, animations) may take 60-120 seconds",
         "Generation endpoints are synchronous: the call blocks until the asset is ready and returns it directly (no polling). They also accept an optional request_id to tag the result for later re-fetching via the results endpoints",
