@@ -209,6 +209,7 @@ Generate text-driven skeletal animations for an **already-rigged** 3D model (rig
 | `prompt` | Yes | Desired motion (e.g., "walking", "swinging an axe", "waving hello") |
 | `mode` | No | Animation representation: `rot_trans` (default, per-bone rotation + translation, most faithful) or `rot_only` (rotation + root translation only — for retargeting to other skeletons / engine pipelines that ignore bone translation) |
 | `num_variants` | No | Number of candidate animations to generate (1-8, default: 4) |
+| `loop` | No | Return to the initial pose — each clip plays forward then mirrors back to the rest pose for a seamless loop (default: true). Best for one-way motions (crouch, punch, wave); reads oddly for cyclic gaits like walking |
 | `augment_prompt` | No | Rewrite the prompt into a detailed motion caption behind the scenes (default: true) |
 | `request_id` | No | Optional client-provided identifier for this request |
 
