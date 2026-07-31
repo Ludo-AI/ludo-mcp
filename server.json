@@ -2,12 +2,12 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "ai.ludo/game-assets",
   "title": "Ludo AI Game Assets",
-  "description": "Generate game assets using AI: sprites, icons, backgrounds, 3D models (GLB) with auto-rigging and text-driven skeletal animation, animated spritesheets, videos, sound effects, music, and character voices. Supports multiple art styles including pixel art, low poly, and stylized 3D.",
+  "description": "Generate game assets using AI: sprites, icons, backgrounds, 3D models (GLB) with auto-rigging (engine-ready joint naming), text-driven skeletal animation and curated animation-preset retargeting, animated spritesheets, videos, sound effects, music, and character voices. Supports multiple art styles including pixel art, low poly, and stylized 3D.",
   "repository": {
     "url": "https://github.com/Ludo-AI/ludo-mcp",
     "source": "github"
   },
-  "version": "0.11.0",
+  "version": "0.12.0",
   "websiteUrl": "https://ludo.ai",
   "remotes": [
     {

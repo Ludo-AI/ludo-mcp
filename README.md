@@ -7,7 +7,7 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 | Category | Capabilities |
 |----------|-------------|
 | **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal |
-| **3D Models** | Convert 2D images to GLB models with PBR textures, auto-rig models (skeleton + skin weights), text-driven skeletal animation |
+| **3D Models** | Convert 2D images to GLB models with PBR textures, auto-rig models (skeleton + skin weights, engine-ready joint naming), text-driven skeletal animation, retarget curated animation presets onto rigged models |
 | **Animation** | Animated spritesheets from static sprites (4-64 frames), motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing) |
 | **Video** | Generate short videos from images or reference images (1-15 seconds, varies by model), prompt-driven video editing, 2x upscaling |
 | **Audio** | Sound effects, background music, character voices, TTS |
@@ -189,12 +189,13 @@ Generate a skeleton and skin weights for an existing 3D model so it can be anima
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `model` | Yes | URL or base64-encoded GLB to rig |
-| `rig_type` | No | Skeleton style prior: `general` (default, works for any asset), `humanoid` (anime-style characters, densest skeleton), `game` (classic game-character rig) |
+| `rig_type` | No | Which skeleton to build: `general` (default, works for any asset), `humanoid` (anime-style characters, densest skeleton), `game` (classic game-character rig), or the pinned humanoid templates for two-armed, two-legged characters — `humanoid_template` (standard 22-joint skeleton with named joints, **required for `animate3DModelPreset`**) and `humanoid_template_hands` (52 joints, five fingers per hand) |
+| `joint_naming` | No | Bone naming convention for the identified joints: `smpl` (default), `mixamo` (Unity's humanoid auto-mapper), `humanik` (unprefixed names — Maya/MotionBuilder/FBX), `unreal` (UE mannequin), `godot` (SkeletonProfileHumanoid), `rigify` (Blender) or `vroid` (VRM). Purely a relabel — the skeleton is identical |
 | `request_id` | No | Optional client-provided identifier for this request |
 
 **Returns:** `model_url` (rigged GLB — skeleton + skin weights baked in), `rigged` (`true`)
 
-**Credits:** 5 per rig
+**Credits:** 1 per rig
 **Processing time:** 60-120 seconds
 
 ---
@@ -215,8 +216,27 @@ Generate text-driven skeletal animations for an **already-rigged** 3D model (rig
 
 **Returns:** `animations` — an array of candidates, each with `clip_name`, `glb_url` (animation-only GLB), `preview_url` (mp4), `mode`, `seed`, `motion`, `fit_rmse`
 
-**Credits:** 5 per generation (one charge returns all variants)
+**Credits:** 0.2 per generation (one charge returns all variants)
 **Processing time:** 60-120 seconds
+
+---
+
+### Animate 3D Model from Preset (`animate3DModelPreset`)
+
+Apply a curated animation preset to an **already-rigged** 3D model (retargeting). Unlike `animate3DModel`, the motion comes from a professionally curated clip library instead of a text prompt, so exactly **one** clip is returned. The model must have a humanoid-template rig — rig it with `rig_type` `humanoid_template` or `humanoid_template_hands` first. Only presets that expose a `clip_url` in `listAnimationPresets` can be applied.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `model` | Yes | URL or base64-encoded **rigged** GLB (humanoid-template rig) |
+| `preset_id` | Yes | id of a preset from `listAnimationPresets` — only presets with a `clip_url` qualify |
+| `crop_loop` | No | Trim the animation to the span that loops seamlessly. Omit for Auto: cyclic motions (walk, idle) loop, one-shots (jump, cast) keep their full arc |
+| `in_place` | No | Remove the animation's net travel so the character moves on the spot — the treadmill clip a game engine expects, with the engine driving locomotion. Omit to follow `crop_loop` |
+| `request_id` | No | Optional client-provided identifier for this request |
+
+**Returns:** `animations` — same envelope as `animate3DModel`, containing one clip with `clip_name`, `preset_id`, `glb_url` (animation-only GLB, joints named as on your model), `preview_url` (mp4), `seed`, `motion`, `fit_rmse`
+
+**Credits:** 0.2 per retarget
+**Processing time:** 30-90 seconds
 
 ---
 
@@ -238,8 +258,8 @@ Create animated spritesheets from static images.
 | `margin_ratio` | No | *Deprecated* — uniform padding on both axes, equivalent to setting both per-axis params to the same value. Cannot be combined with the per-axis params (fails with 400) |
 | `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
 | `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
-| `model` | No | `blitz` (default), `eagle`, `eagle-audio`, `chaos`. Legacy aliases: `standard`→`blitz`, `new`→`chaos` |
-| `duration` | No | Depends on model — Blitz: `1.2`–`4`s (1.2, 1.5, 2, 2.5, 3, 3.5, 4); Eagle / Eagle with Audio: `1`–`4`s; Chaos: `4`s |
+| `model` | No | `blitz` (default; most reliable and predictable, can struggle with very short animations), `forge` (best for basic animations and relatively simple sprites), `eagle` (for complex motion or visually complex sprites), `eagle-audio` (same visuals as Eagle, plus audio generation). Legacy alias: `standard`→`blitz` |
+| `duration` | No | Depends on model — Blitz: `1.2`–`4`s (1.2, 1.5, 2, 2.5, 3, 3.5, 4); Forge: `1`–`4`s in 0.5 steps; Eagle / Eagle with Audio: `1`–`4`s |
 | `final_image` | No | Ending frame for interpolation |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
@@ -248,17 +268,17 @@ Create animated spritesheets from static images.
 
 **Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`
 
-**Credits:** Varies by duration and model. Standard model: 1.9 credits/sec with a 4-credit minimum (e.g. ~1.2s = 4, 3s ≈ 5.7, 4s ≈ 7.6). Higher-quality models cost more per second.
+**Credits:** Varies by duration and model, each with a 4-credit minimum — Forge: 1.5/sec, Blitz: 1.9/sec, Eagle: 2.6/sec, Eagle with Audio: 3.1/sec (e.g. Blitz 3s ≈ 5.7).
 **Processing time:** 30-90 seconds
 
 ---
 
 ### Animation Presets (`listAnimationPresets`)
 
-List available animation presets for use with motion transfer. Returns preset animations, perspectives, and directions — no video URLs are exposed.
+List available animation presets for use with motion transfer (`transferMotion`) and 3D retargeting (`animate3DModelPreset`). Returns preset animations, perspectives, and directions — no video URLs are exposed.
 
 **Returns:**
-- `animations` — Array of presets with `id`, `name`, `category`, `description`, `duration`, `preview_url`
+- `animations` — Array of presets with `id`, `name`, `category`, `description`, `duration`, `preview_url`, and — when the preset can be retargeted onto a rigged 3D model — `clip_url`
 - `perspectives` — Array with `id`, `name`, `description` (all animations support all perspectives)
 - `directions` — `["N", "NE", "E", "SE", "S", "SW", "W", "NW"]` (all animations support all directions)
 
@@ -333,8 +353,8 @@ Generate short videos from images.
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64 starting frame |
 | `prompt` | Yes | Motion description (e.g., "camera zooms in", "character walks forward") |
-| `duration` | No | Depends on model (defaults to the model's shortest) — Blitz: `2`–`12`s; Eagle / Eagle with Audio: `1`–`15`s; Chaos: `4`–`12`s |
-| `model` | No | `blitz` (default), `eagle`, `eagle-audio`, `chaos`. Legacy aliases: `standard`→`blitz`, `new`→`chaos` |
+| `duration` | No | Depends on model (defaults to the model's shortest) — Blitz: `2`–`12`s; Eagle / Eagle with Audio: `1`–`15`s |
+| `model` | No | `blitz` (default), `eagle`, `eagle-audio`. Legacy alias: `standard`→`blitz` |
 | `final_image` | No | Ending frame for interpolation |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
@@ -622,6 +642,10 @@ Animate this character with a smooth walking cycle, 16 frames
 
 ```
 Create an idle breathing animation for this character sprite
+```
+
+```
+Rig this 3D character with a humanoid template using Mixamo joint names, then apply a walk animation preset to it
 ```
 
 ```
