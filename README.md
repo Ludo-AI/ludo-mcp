@@ -8,9 +8,10 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 |----------|-------------|
 | **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal |
 | **3D Models** | Convert 2D images to GLB models with PBR textures, auto-rig models (skeleton + skin weights, engine-ready joint naming), text-driven skeletal animation, retarget curated animation presets onto rigged models |
-| **Animation** | Animated spritesheets from static sprites (4-64 frames), motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing) |
+| **Animation** | Animated spritesheets from static sprites (4-64 frames), keyframe animation through up to three fixed frames, motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing) |
 | **Video** | Generate short videos from images or reference images (1-15 seconds, varies by model), prompt-driven video editing, 2x upscaling |
 | **Audio** | Sound effects, background music, character voices, TTS |
+| **Jobs & History** | Async job queue: submit, poll or long-poll, list and cancel jobs (queued jobs refund their credits), plus paginated generation history across the API and the web app |
 
 ## Quick Start
 
@@ -55,6 +56,8 @@ Add to your MCP settings in Cursor preferences:
 ```
 
 ## Available Tools
+
+Generation tools run on a job queue and return a job id immediately; the **Returns** field of each tool below describes the `result` you get back from `getApiJob` once the job succeeds. See [How Generation Calls Work](#how-generation-calls-work).
 
 ### Image Generation (`createImage`)
 
@@ -184,16 +187,16 @@ Convert a 2D image to a 3D GLB model with textures.
 
 ### Rig 3D Model (`rigModel`)
 
-Generate a skeleton and skin weights for an existing 3D model so it can be animated. Non-destructive to the geometry — it returns a new rigged GLB. Rig a model **before** using `animate3DModel`.
+Generate a skeleton and skin weights for an existing 3D model so it can be animated. Non-destructive to the geometry: it returns a new rigged GLB. Rig a model **before** using `animate3DModel`.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `model` | Yes | URL or base64-encoded GLB to rig |
-| `rig_type` | No | Which skeleton to build: `general` (default, works for any asset), `humanoid` (anime-style characters, densest skeleton), `game` (classic game-character rig), or the pinned humanoid templates for two-armed, two-legged characters — `humanoid_template` (standard 22-joint skeleton with named joints, **required for `animate3DModelPreset`**) and `humanoid_template_hands` (52 joints, five fingers per hand) |
-| `joint_naming` | No | Bone naming convention for the identified joints: `smpl` (default), `mixamo` (Unity's humanoid auto-mapper), `humanik` (unprefixed names — Maya/MotionBuilder/FBX), `unreal` (UE mannequin), `godot` (SkeletonProfileHumanoid), `rigify` (Blender) or `vroid` (VRM). Purely a relabel — the skeleton is identical |
+| `rig_type` | No | Skeleton style prior: `general` (default, works for any asset), `humanoid` (anime-style characters, densest skeleton), `game` (classic game-character rig), or the pinned humanoid templates with named joints (**required for `animate3DModelPreset`**): `humanoid_template` (22 joints) and `humanoid_template_hands` (52 joints, five fingers per hand). The templates only suit two-armed, two-legged characters |
+| `joint_naming` | No | Bone naming convention for the identified joints: `smpl` (default), `mixamo` (Unity's humanoid auto-mapper), `humanik` (unprefixed names for Maya/MotionBuilder/FBX), `unreal` (UE mannequin), `godot` (SkeletonProfileHumanoid), `rigify` (Blender) or `vroid` (VRM). Purely a relabel, the skeleton is identical |
 | `request_id` | No | Optional client-provided identifier for this request |
 
-**Returns:** `model_url` (rigged GLB — skeleton + skin weights baked in), `rigged` (`true`)
+**Returns:** `model_url` (rigged GLB, skeleton + skin weights baked in), `rigged` (`true`)
 
 **Credits:** 1 per rig
 **Processing time:** 60-120 seconds
@@ -202,38 +205,38 @@ Generate a skeleton and skin weights for an existing 3D model so it can be anima
 
 ### Animate 3D Model (`animate3DModel`)
 
-Generate text-driven skeletal animations for an **already-rigged** 3D model (rig it first with `rigModel`). Animation quality is hit-or-miss, so several candidates are returned for you to choose from. Each candidate is a standalone animation-only GLB (skeleton + one clip, **no mesh**) plus an mp4 preview — pick the best one and fuse it onto your model in a game engine or three.js.
+Generate text-driven skeletal animations for an **already-rigged** 3D model (rig it first with `rigModel`). Animation quality is hit-or-miss, so several candidates are returned for you to choose from. Each candidate is a standalone animation-only GLB (skeleton + one clip, **no mesh**) plus an mp4 preview; pick the best one and fuse it onto your model in a game engine or three.js.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `model` | Yes | URL or base64-encoded **rigged** GLB to animate (rig it first with `rigModel`) |
 | `prompt` | Yes | Desired motion (e.g., "walking", "swinging an axe", "waving hello") |
-| `mode` | No | Animation representation: `rot_trans` (default, per-bone rotation + translation, most faithful) or `rot_only` (rotation + root translation only — for retargeting to other skeletons / engine pipelines that ignore bone translation) |
+| `mode` | No | Animation representation: `rot_trans` (default, per-bone rotation + translation, most faithful) or `rot_only` (rotation + root translation only, for retargeting to other skeletons / engine pipelines that ignore bone translation) |
 | `num_variants` | No | Number of candidate animations to generate (1-8, default: 4) |
-| `loop` | No | Return to the initial pose — each clip plays forward then mirrors back to the rest pose for a seamless loop (default: true). Best for one-way motions (crouch, punch, wave); reads oddly for cyclic gaits like walking |
+| `loop` | No | Return to the initial pose: each clip plays forward then mirrors back to the rest pose for a seamless loop (default: true). Best for one-way motions (crouch, punch, wave); reads oddly for cyclic gaits like walking |
 | `augment_prompt` | No | Rewrite the prompt into a detailed motion caption behind the scenes (default: true) |
 | `request_id` | No | Optional client-provided identifier for this request |
 
-**Returns:** `animations` — an array of candidates, each with `clip_name`, `glb_url` (animation-only GLB), `preview_url` (mp4), `mode`, `seed`, `motion`, `fit_rmse`
+**Returns:** `animations`, an array of candidates, each with `clip_name`, `glb_url` (animation-only GLB), `preview_url` (mp4), `mode`, `seed`, `motion`, `fit_rmse`
 
-**Credits:** 0.2 per generation (one charge returns all variants)
+**Credits:** 0.2 per generation (one charge returns all variants; introductory price, 80% off the 1-credit list price)
 **Processing time:** 60-120 seconds
 
 ---
 
 ### Animate 3D Model from Preset (`animate3DModelPreset`)
 
-Apply a curated animation preset to an **already-rigged** 3D model (retargeting). Unlike `animate3DModel`, the motion comes from a professionally curated clip library instead of a text prompt, so exactly **one** clip is returned. The model must have a humanoid-template rig — rig it with `rig_type` `humanoid_template` or `humanoid_template_hands` first. Only presets that expose a `clip_url` in `listAnimationPresets` can be applied.
+Apply a curated animation preset to an **already-rigged** 3D model (retargeting). Unlike `animate3DModel`, the motion comes from a professionally curated clip library instead of a text prompt, so exactly **one** clip is returned. The model must have a humanoid-template rig: rig it with `rig_type` `humanoid_template` or `humanoid_template_hands` first. Only presets that expose a `clip_url` in `listAnimationPresets` can be applied.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `model` | Yes | URL or base64-encoded **rigged** GLB (humanoid-template rig) |
-| `preset_id` | Yes | id of a preset from `listAnimationPresets` — only presets with a `clip_url` qualify |
+| `preset_id` | Yes | id of a preset from `listAnimationPresets`; only presets with a `clip_url` qualify |
 | `crop_loop` | No | Trim the animation to the span that loops seamlessly. Omit for Auto: cyclic motions (walk, idle) loop, one-shots (jump, cast) keep their full arc |
-| `in_place` | No | Remove the animation's net travel so the character moves on the spot — the treadmill clip a game engine expects, with the engine driving locomotion. Omit to follow `crop_loop` |
+| `in_place` | No | Remove the animation's net travel so the character moves on the spot, the treadmill clip a game engine expects, with the engine driving locomotion. Omit to follow `crop_loop` |
 | `request_id` | No | Optional client-provided identifier for this request |
 
-**Returns:** `animations` — same envelope as `animate3DModel`, containing one clip with `clip_name`, `preset_id`, `glb_url` (animation-only GLB, joints named as on your model), `preview_url` (mp4), `seed`, `motion`, `fit_rmse`
+**Returns:** `animations`, the same envelope as `animate3DModel`, containing one clip with `clip_name`, `preset_id`, `glb_url` (animation-only GLB, joints named as on your model), `preview_url` (mp4), `seed`, `motion`, `fit_rmse`
 
 **Credits:** 0.2 per retarget
 **Processing time:** 30-90 seconds
@@ -255,11 +258,11 @@ Create animated spritesheets from static images.
 | `crop` | No | Crop frames to fit content; smaller spritesheets but inconsistent frame sizes |
 | `margin_ratio_horizontal` | No | Horizontal padding around the sprite as a ratio 0.0–1.0 (only used when `margin_ratio_mode` is `manual`). Useful for animations that extend sideways, e.g. sword slashes or punches |
 | `margin_ratio_vertical` | No | Vertical padding around the sprite as a ratio 0.0–1.0 (only used when `margin_ratio_mode` is `manual`). Useful for animations that extend up or down, e.g. jumps |
-| `margin_ratio` | No | *Deprecated* — uniform padding on both axes, equivalent to setting both per-axis params to the same value. Cannot be combined with the per-axis params (fails with 400) |
+| `margin_ratio` | No | *Deprecated* - uniform padding on both axes, equivalent to setting both per-axis params to the same value. Cannot be combined with the per-axis params (fails with 400) |
 | `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
 | `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
 | `model` | No | `blitz` (default; most reliable and predictable, can struggle with very short animations), `forge` (best for basic animations and relatively simple sprites), `eagle` (for complex motion or visually complex sprites), `eagle-audio` (same visuals as Eagle, plus audio generation). Legacy alias: `standard`→`blitz` |
-| `duration` | No | Depends on model — Blitz: `1.2`–`4`s (1.2, 1.5, 2, 2.5, 3, 3.5, 4); Forge: `1`–`4`s in 0.5 steps; Eagle / Eagle with Audio: `1`–`4`s |
+| `duration` | No | Depends on model: Blitz: `1.2`–`4`s (1.2, 1.5, 2, 2.5, 3, 3.5, 4); Forge: `1`–`4`s in 0.5 steps; Eagle / Eagle with Audio: `1`–`4`s |
 | `final_image` | No | Ending frame for interpolation |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
@@ -268,19 +271,52 @@ Create animated spritesheets from static images.
 
 **Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`
 
-**Credits:** Varies by duration and model, each with a 4-credit minimum — Forge: 1.5/sec, Blitz: 1.9/sec, Eagle: 2.6/sec, Eagle with Audio: 3.1/sec (e.g. Blitz 3s ≈ 5.7).
+**Credits:** Varies by duration and model, each with a 4-credit minimum - Forge: 1.5/sec, Blitz: 1.9/sec, Eagle: 2.6/sec, Eagle with Audio: 3.1/sec (e.g. Blitz 3s ≈ 5.7).
+**Processing time:** 30-90 seconds
+
+---
+
+### Keyframe Animation (`animateSpriteKeyframes`)
+
+Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_image`, `final_image`), producing a spritesheet that interpolates through the provided frames in order. Always runs on the Forge model (no `model` parameter; Forge is the only model supporting middle keyframes). The motion prompt is optional here: when omitted, the motion is derived purely from the keyframes. Use `animateSprite` instead for the classic single-image + text-prompt animation with model choice.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `initial_image` | No* | URL or base64 of the first keyframe. *At least one of `initial_image` or `middle_image` is required (a `final_image` alone is rejected) |
+| `middle_image` | No* | URL or base64 of the middle keyframe the animation passes through |
+| `final_image` | No | URL or base64 of the final keyframe |
+| `motion_prompt` | No | Optional animation description (e.g., "attack slash"); without it the keyframes drive the motion |
+| `image_type` | No | `sprite`, `sprite-vfx`, `ui_asset` |
+| `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
+| `frame_size` | No | `32`, `64`, `96`, `128`, `192`, `256` (default), `384`, `0` (max resolution), `-1` (AI 1.5× upscale), `-9` (match input frame) |
+| `loop` | No | Seamless loop (default: true) |
+| `crop` | No | Crop frames to fit content; smaller spritesheets but inconsistent frame sizes |
+| `margin_ratio_horizontal` | No | Horizontal padding around the sprite as a ratio 0.0–1.0 (only used when `margin_ratio_mode` is `manual`) |
+| `margin_ratio_vertical` | No | Vertical padding around the sprite as a ratio 0.0–1.0 (only used when `margin_ratio_mode` is `manual`) |
+| `margin_ratio` | No | *Deprecated* - uniform padding on both axes; cannot be combined with the per-axis params (fails with 400) |
+| `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
+| `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
+| `duration` | No | Forge durations: `1`–`4`s in 0.5 steps (default: 1) |
+| `gif` | No | Generate an animated GIF (default: false) |
+| `individual_frames` | No | Extract individual frame images (default: false) |
+| `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...)
+
+**Credits:** Forge only, 1.5 credits/sec with a 4-credit minimum (1s–2.5s = 4, 3s = 4.5, 3.5s ≈ 5.3, 4s = 6)
 **Processing time:** 30-90 seconds
 
 ---
 
 ### Animation Presets (`listAnimationPresets`)
 
-List available animation presets for use with motion transfer (`transferMotion`) and 3D retargeting (`animate3DModelPreset`). Returns preset animations, perspectives, and directions — no video URLs are exposed.
+List available animation presets, used by `transferMotion` (onto a sprite) and `animate3DModelPreset` (onto a rigged 3D model). Returns preset animations, perspectives, and directions; no video URLs are exposed.
 
 **Returns:**
-- `animations` — Array of presets with `id`, `name`, `category`, `description`, `duration`, `preview_url`, and — when the preset can be retargeted onto a rigged 3D model — `clip_url`
-- `perspectives` — Array with `id`, `name`, `description` (all animations support all perspectives)
-- `directions` — `["N", "NE", "E", "SE", "S", "SW", "W", "NW"]` (all animations support all directions)
+- `animations`: Array of presets with `id`, `name`, `category`, `description`, `duration`, `preview_url`, and `clip_url` on the presets that can be retargeted onto a rigged 3D model
+- `perspectives`: Array with `id`, `name`, `description` (all animations support all perspectives)
+- `directions`: `["N", "NE", "E", "SE", "S", "SW", "W", "NW"]` (all animations support all directions)
 
 **Credits:** Free
 
@@ -303,12 +339,12 @@ Transfer motion from a video or animation preset onto a static sprite, producing
 | `crop` | No | Crop frames to fit content |
 | `margin_ratio_horizontal` | No | Horizontal padding around the sprite (0.0–1.0). Useful for animations that extend sideways, e.g. sword slashes or punches |
 | `margin_ratio_vertical` | No | Vertical padding around the sprite (0.0–1.0). Useful for animations that extend up or down, e.g. jumps |
-| `margin_ratio` | No | *Deprecated* — uniform padding on both axes (0.0–1.0, default 0.15 when no margin is given). Cannot be combined with the per-axis params (fails with 400) |
+| `margin_ratio` | No | *Deprecated* - uniform padding on both axes (0.0–1.0, default 0.15 when no margin is given). Cannot be combined with the per-axis params (fails with 400) |
 | `margin_ratio_mode` | No | `manual` (default), `none` |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
-| `model` | No | `tango` (default) — most powerful for demanding use cases; `forge` — cost-effective for simple motion, works best with presets and matching poses |
+| `model` | No | `tango` (default), most powerful for demanding use cases; `forge`, cost-effective for simple motion, works best with presets and matching poses |
 | `duration` | No | Animation length in seconds: `1`–`4` (default 1.5). If the reference video is longer, it is compressed to this duration |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
@@ -320,12 +356,12 @@ Transfer motion from a video or animation preset onto a static sprite, producing
 
 ### Edit Spritesheet (`editSpritesheet`)
 
-Edit a spritesheet you previously generated: re-prompt its animation, outpaint beyond the frame, or repair a bad loop. Pass back the `spritesheet_url` you received from `animateSprite`, `transferMotion`, or an earlier edit — it must be a spritesheet you generated in the last 7 days (external URLs are not accepted).
+Edit a spritesheet you previously generated: re-prompt its animation, outpaint beyond the frame, or repair a bad loop. Pass back the `spritesheet_url` you received from `animateSprite`, `transferMotion`, or an earlier edit; it must be a spritesheet you generated in the last 7 days (external URLs are not accepted).
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `spritesheet_url` | Yes | URL of a spritesheet you generated in the last 7 days |
-| `edit_mode` | No | `prompt` (default) — re-prompt the animation; `outpaint` — extend beyond the frame; `fix_loop` — repair a bad loop |
+| `edit_mode` | No | `prompt` (default), re-prompt the animation; `outpaint`, extend beyond the frame; `fix_loop`, repair a bad loop |
 | `prompt` | No | Edit instruction. Required for `prompt` mode, optional for `outpaint`, not accepted for `fix_loop` |
 | `images` | No | Up to 5 reference images (URL or base64) to guide the edit |
 | `duration` | No | Output length in seconds: `1`–`4`. Defaults to the source spritesheet's duration |
@@ -353,7 +389,7 @@ Generate short videos from images.
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64 starting frame |
 | `prompt` | Yes | Motion description (e.g., "camera zooms in", "character walks forward") |
-| `duration` | No | Depends on model (defaults to the model's shortest) — Blitz: `2`–`12`s; Eagle / Eagle with Audio: `1`–`15`s |
+| `duration` | No | Depends on model (defaults to the model's shortest): Blitz: `2`–`12`s; Eagle / Eagle with Audio: `1`–`15`s |
 | `model` | No | `blitz` (default), `eagle`, `eagle-audio`. Legacy alias: `standard`→`blitz` |
 | `final_image` | No | Ending frame for interpolation |
 | `request_id` | No | Client-provided ID to retrieve results later |
@@ -383,7 +419,7 @@ Generate a video from 1-5 reference images and a text prompt. Unlike `createVide
 
 ### Edit Video (`editVideo`)
 
-Edit a video you previously generated with a text prompt and optional reference images (video-to-video). Pass back the `url` you received from `createVideo`, `createVideoFromReferences`, or an earlier edit — it must be a video you generated in the last 7 days (external URLs are not accepted).
+Edit a video you previously generated with a text prompt and optional reference images (video-to-video). Pass back the `url` you received from `createVideo`, `createVideoFromReferences`, or an earlier edit; it must be a video you generated in the last 7 days (external URLs are not accepted).
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -402,7 +438,7 @@ Edit a video you previously generated with a text prompt and optional reference 
 
 ### Upscale Video (`upscaleVideo`)
 
-Upscale a video you previously generated to twice its resolution (2x). Pass back the `url` you received from `createVideo`, `createVideoFromReferences`, or `editVideo` — it must be a video you generated in the last 7 days (external URLs are not accepted). Only videos below 960x960 pixels can be upscaled; larger sources are rejected.
+Upscale a video you previously generated to twice its resolution (2x). Pass back the `url` you received from `createVideo`, `createVideoFromReferences`, or `editVideo`; it must be a video you generated in the last 7 days (external URLs are not accepted). Only videos below 960x960 pixels can be upscaled; larger sources are rejected.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -520,71 +556,66 @@ Use preset voices for text-to-speech.
 
 ---
 
-### Retrieve Image Results (`getImageResults`)
+### Check a Job (`getApiJob`)
 
-Retrieve your recent API-generated images.
+Poll the status of a generation job started by any tool. Every job returns `{id, status}`; call `getApiJob` with that id until `status` is `succeeded` (then read `result`, shaped exactly like the tool's documented output) or `failed` (then read `error`).
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `request_id` | No | Filter to a specific request |
+| `id` | Yes | Job id returned by the generation tool |
+| `wait` | No | Seconds to long-poll for a terminal state (0-60, default: 0). With `wait` the call is held open and returns the moment the job finishes |
 
-**Returns:** Array of image objects with `url`, `request_id`, `created_at`
+**Returns:** `id`, `status` (`queued`, `running`, `succeeded`, `failed`, `canceled`), `result` on success, `error` on failure, plus `poll_after_ms` on non-terminal responses (wait at least that long before polling again)
 
 **Credits:** Free
 
 ---
 
-### Retrieve Sprite Results (`getSpriteResults`)
+### List Jobs (`listApiJobs`)
 
-Retrieve your recent API-generated spritesheets.
+List the generation jobs you started through the API or MCP, most recent first. Web app jobs are not included.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `request_id` | No | Filter to a specific request |
+| `status` | No | Comma-separated statuses to include (`queued`, `running`, `succeeded`, `failed`, `canceled`). Defaults to all |
+| `limit` | No | Maximum number of jobs to return (default: 50, capped at 100) |
 
-**Returns:** Array of spritesheet objects with `request_id`, `created_at`
+**Returns:** Array of job objects with `id`, `status`, and timestamps
 
 **Credits:** Free
 
 ---
 
-### Retrieve Video Results (`getVideoResults`)
+### Cancel a Job (`cancelApiJob`)
 
-Retrieve your recent API-generated videos.
+Cancel a job that is still queued and get its credits refunded. Jobs that are already running cannot be canceled (the call fails with 409).
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `request_id` | No | Filter to a specific request |
+| `id` | Yes | Job id to cancel |
 
-**Returns:** Array of video objects with `url`, `request_id`, `created_at`
+**Returns:** The canceled job
 
-**Credits:** Free
+**Credits:** Free, and the queued job's credits are refunded
 
 ---
 
-### Retrieve Audio Results (`getAudioResults`)
+### Generation History (`listGenerations`)
 
-Retrieve your recent API-generated audio.
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `request_id` | No | Filter to a specific request |
-
-**Returns:** Array of audio objects with `request_id`, `created_at`
-
-**Credits:** Free
-
----
-
-### Retrieve 3D Model Results (`get3DModelResults`)
-
-Retrieve your recent API-generated 3D models.
+List your generation history across both the API and the Ludo web studio, with filtering, text search and pagination. This replaces the per-type results tools (`getImageResults`, `getSpriteResults`, `getVideoResults`, `getAudioResults`, `get3DModelResults`), which have been removed from the MCP and deprecated in the REST API.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `request_id` | No | Filter to a specific request |
+| `type` | Yes | `image`, `spritesheet`, `video`, `audio`, `3d` |
+| `source` | No | `api` (your API/MCP generations, last 7 days only), `web` (your web studio generations, no time limit), or `all` (default) |
+| `search` | No | Free-text search. Every whitespace-separated term must match the item's tags or one of its text fields (prompt, hints, style, label, ...), so "dwarf axe" narrows to items matching both |
+| `request_id` | No | Only return items tagged with this `request_id` when you generated them |
+| `date_from` | No | Only items generated at or after this time (unix seconds) |
+| `date_to` | No | Only items generated at or before this time (unix seconds) |
+| `page_size` | No | Items per page, 1-100 (default: 20) |
+| `page_number` | No | 1-based page number (default: 1) |
 
-**Returns:** Array of 3D asset objects with `request_id`, `created_at`
+**Returns:** `items`, `page`, `page_size`, `has_more`. Keep paging while `has_more` is true
 
 **Credits:** Free
 
@@ -592,27 +623,48 @@ Retrieve your recent API-generated 3D models.
 
 ## How Generation Calls Work
 
-Every generation tool is **synchronous**: the call blocks until the asset is ready and returns the result (with its URLs) directly in the response. There is no separate polling step, and dropping the connection before the call returns cancels the request. Long-running operations such as 3D models and animations can take 30–120 seconds, so allow a generous client-side timeout.
+Every generation runs on a job queue, and **over MCP every generation tool is asynchronous**. A generation call returns `{id, status: "queued"}` right away instead of blocking, so nothing is held open while a GPU runs and no MCP transport can time out mid-generation. You then collect the result with `getApiJob`. There is no `async` parameter on the MCP tools: it is not a knob you need to set.
 
-## Retrieving Results Later
+(If you call the REST API directly rather than through MCP, `async` is a payload flag there. Synchronous is still the REST default until **September 10, 2026**, after which requests default to async and return a job id; `async: false` keeps synchronous behaviour during and after the transition, and stays supported indefinitely.)
 
-Every generation tool also accepts an optional `request_id`. This does **not** make the call asynchronous — it tags the result so you can fetch it again afterwards from the matching results endpoint (for example from a different session, or to list everything tied to one request). The result is persisted only after the synchronous call has completed successfully.
+### Collecting a result
 
 ```
-# Generate a sprite animation — this call blocks and returns the spritesheet directly
+# Submit the work, get a job id straight back
+animateSprite with initial_image="url", motion_prompt="walking"
+-> { "id": "job_abc123", "status": "queued" }
+
+# Long-poll until it finishes (up to 60s per call), then read result
+getApiJob with id="job_abc123", wait=30
+-> { "id": "job_abc123", "status": "succeeded", "result": { "spritesheet_url": "...", ... } }
+```
+
+`result` is exactly the response the tool documents; on failure read `error` instead. Without `wait`, poll every few seconds and respect the `poll_after_ms` hint on non-terminal responses. Use `listApiJobs` to see what is still in flight and `cancelApiJob` to drop a job that has not started yet (its credits are refunded).
+
+## Fair Use Limits
+
+- **50 generations queued or running per account.** Submitting beyond that returns `429` with code `PENDING_JOBS_LIMIT`; wait for jobs to finish, then submit again.
+- **150 requests per 5 minutes** on the read endpoints (job status, job listing, generation history), per API key. A `429` carries `Retry-After`.
+
+## Finding Results Later
+
+Every generation tool also accepts an optional `request_id`. It tags the result so you can find it again afterwards, for example from a different session:
+
+```
+# Tag a generation
 animateSprite with request_id="my-anim-001", initial_image="url", motion_prompt="walking"
 
-# Later, re-fetch that same result (e.g. in another session) by its request_id
-getSpriteResults with request_id="my-anim-001"
+# Later, look it up again
+listGenerations with type="spritesheet", request_id="my-anim-001"
 ```
 
-Results are available for 7 days, and each results endpoint is free and returns up to 100 recent API-generated assets.
+`listGenerations` is the general history tool: filter by `type`, by `source` (`api`, `web` or `all`), by free-text `search`, or by date, and page through the results. API-generated results are available for 7 days.
 
 ---
 
 ## Asset URL Expiration
 
-All generated asset URLs (images, spritesheets, videos, audio, 3D models) point to Google Cloud Storage links that expire after **7 days**. Any asset that needs to outlive that window — especially assets destined for production use — must be downloaded and saved locally (or re-uploaded to permanent storage) right away. Never store the returned URLs as permanent references.
+All generated asset URLs (images, spritesheets, videos, audio, 3D models) point to Google Cloud Storage links that expire after **7 days**. Any asset that needs to outlive that window, especially assets destined for production use, must be downloaded and saved locally (or re-uploaded to permanent storage) right away. Never store the returned URLs as permanent references.
 
 The server also announces this to MCP clients via its `instructions` field during the initialize handshake, so models connected through clients that surface server instructions will be reminded automatically.
 

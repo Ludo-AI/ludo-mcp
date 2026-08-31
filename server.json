@@ -46,12 +46,17 @@
         {
           "name": "Rig a 3D Model",
           "description": "Add a skeleton to a GLB so it can be animated",
-          "note": "rigModel with model='<glb url>' and optional rig_type='humanoid' returns a rigged model_url (skeleton + skin weights baked in) — run this before animate3DModel"
+          "note": "rigModel with model='<glb url>' and optional rig_type='humanoid' returns a rigged model_url (skeleton + skin weights baked in); run this before animate3DModel"
         },
         {
           "name": "Animate a 3D Model",
           "description": "Generate text-driven skeletal animations for a rigged model",
-          "note": "animate3DModel with model='<rigged glb url>' and prompt='walking' returns several candidate clips — each a standalone animation-only GLB plus an mp4 preview — to pick from and fuse onto your model. Rig the model first with rigModel"
+          "note": "animate3DModel with model='<rigged glb url>' and prompt='walking' returns several candidate clips, each a standalone animation-only GLB plus an mp4 preview, to pick from and fuse onto your model. Rig the model first with rigModel"
+        },
+        {
+          "name": "Retarget an Animation Preset onto a 3D Model",
+          "description": "Apply a curated, hand-made animation clip to a rigged model",
+          "note": "animate3DModelPreset with model='<rigged glb url>' and preset_id from listAnimationPresets (only presets exposing a clip_url can be applied to a 3D model), plus optional crop_loop and in_place. Cheaper and more predictable than prompt-driven animate3DModel; requires a humanoid_template rig, so rig with rig_type='humanoid_template' or 'humanoid_template_hands' first"
         },
         {
           "name": "Create Walking Animation",
@@ -144,9 +149,19 @@
           "note": "upscaleVideo with video='<url from createVideo/createVideoFromReferences/editVideo>' - 2x upscale for videos below 960x960 pixels, flat 0.2 credits/sec; the URL must be from your own generation in the last 7 days"
         },
         {
-          "name": "Retrieve Results Later",
-          "description": "Re-fetch a generation result afterwards via its request_id",
-          "note": "Generation calls are synchronous and return the result directly. Optionally pass request_id in a generation call to tag the result, then later use getImageResults/getSpriteResults/getVideoResults/getAudioResults/get3DModelResults with that request_id to re-fetch it (e.g. from another session)"
+          "name": "Collect a Generation Result",
+          "description": "Pick up the asset from the job a generation tool returned",
+          "note": "Generation tools return {id, status:'queued'} immediately. Call getApiJob with that id, optionally wait=30 to long-poll (max 60), until status is 'succeeded' and read its result field, which is exactly the response documented for that tool. On 'failed' read error instead"
+        },
+        {
+          "name": "Manage Running Jobs",
+          "description": "See what is in flight and cancel work you no longer need",
+          "note": "listApiJobs returns your recent API/MCP jobs, filterable by a comma-separated status list (queued, running, succeeded, failed, canceled). cancelApiJob with a job id cancels a job that is still queued and refunds its credits; a job that already started cannot be canceled (409)"
+        },
+        {
+          "name": "Browse Generation History",
+          "description": "Search past generations from both the API and the web app",
+          "note": "listGenerations with type='spritesheet' and optional source='api'|'web'|'all', search='dwarf axe', request_id, date_from/date_to, page_size and page_number. Returns {items, page, page_size, has_more}; keep paging while has_more is true. It replaces the removed per-type results tools"
         }
       ],
       "keywords": [
@@ -175,15 +190,18 @@
       "license": "Proprietary",
       "publisher": "Ludo AI",
       "notes": [
-        "Credit-based pricing: images (0.5 each), 3D models (3), 3D model rigging (5), 3D model animation (5, returns multiple candidates), sprite animations (from 4, varies by duration/model), motion transfer (from 4, varies by duration/model), spritesheet edits (2/sec, min 4), reference videos (1.5-2/sec by model), video edits (2/sec), video upscaling (0.2/sec), videos (1 credit/sec on the standard model), audio: sound effects/ambiance (2), music/transform (3), voice/speech (1)",
+        "Credit-based pricing: images (0.5 each), 3D models (3), 3D model rigging (1), 3D model animation (0.2, returns multiple candidates), preset 3D animation retargeting (0.2), sprite animations (from 4, varies by duration/model), motion transfer (from 4, varies by duration/model), spritesheet edits (2/sec, min 4), reference videos (1.5-2/sec by model), video edits (2/sec), video upscaling (0.2/sec), videos (1 credit/sec on the standard model), audio: sound effects/ambiance (2), music/transform (3), voice/speech (1)",
         "Supports multiple art styles: Pixel Art, Low Poly, Cartoonish, Stylized 3D, and more",
         "3D models output as GLB with optional PBR textures",
-        "3D models can be auto-rigged (rigModel: adds a skeleton + skin weights) and then given text-driven skeletal animations (animate3DModel). Rig before animating. animate3DModel returns several candidate clips — each a standalone animation-only GLB (skeleton + one clip, no mesh) plus an mp4 preview — for the caller to pick from and fuse onto the model in their engine/three.js",
+        "3D models can be auto-rigged (rigModel: adds a skeleton + skin weights) and then given text-driven skeletal animations (animate3DModel). Rig before animating. A model rigged with rig_type humanoid_template (or humanoid_template_hands) can also take curated animation presets via animate3DModelPreset, using a preset_id from listAnimationPresets. animate3DModel returns several candidate clips, each a standalone animation-only GLB (skeleton + one clip, no mesh) plus an mp4 preview, for the caller to pick from and fuse onto the model in their engine/three.js",
         "Spritesheets support variable frame counts (4-64) and sizes (64-256px)",
         "Long-running operations (3D models, animations) may take 60-120 seconds",
-        "Generation endpoints are synchronous: the call blocks until the asset is ready and returns it directly (no polling). They also accept an optional request_id to tag the result for later re-fetching via the results endpoints",
-        "Results endpoints (getImageResults, getSpriteResults, etc.) are free and return up to 100 recent results",
-        "All generated asset URLs are temporary Google Cloud Storage links that expire after 7 days — download and save assets locally (or re-upload to permanent storage) before they expire, especially anything destined for production use; never store the returned URLs as permanent references"
+        "Generations run on a job queue. Over MCP every generation tool is asynchronous: it returns {id, status:'queued'} immediately and the result is collected with getApiJob (pass wait up to 60 seconds to long-poll). Non-terminal responses carry poll_after_ms. There is no async parameter on the MCP tools",
+        "On the REST API the same queue is driven by an async payload flag: synchronous stays the default until September 10, 2026, after which requests default to async and return 202 with a job id. Setting async: false keeps synchronous behavior during and after the transition",
+        "Job tools are free: getApiJob (status/result, optional wait long-poll), listApiJobs (recent API/MCP jobs, filter by status, limit capped at 100), cancelApiJob (cancels a still-queued job and refunds its credits)",
+        "listGenerations is the free, paginated generation history across both surfaces: filter by type, by source (api|web|all), by free-text search, by request_id or by date. It replaces the removed per-type results tools (getImageResults, getSpriteResults, getVideoResults, getAudioResults, get3DModelResults), which are deprecated in the REST API",
+        "Fair use: up to 50 generations queued or running per account (further submissions return 429 with code PENDING_JOBS_LIMIT), and 150 requests per 5 minutes per API key on the read endpoints (job status, job listing, generation history); a 429 carries Retry-After",
+        "All generated asset URLs are temporary Google Cloud Storage links that expire after 7 days: download and save assets locally (or re-upload to permanent storage) before they expire, especially anything destined for production use; never store the returned URLs as permanent references"
       ]
     }
   }
