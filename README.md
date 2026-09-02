@@ -251,9 +251,9 @@ Create animated spritesheets from static images.
 |-----------|----------|-------------|
 | `initial_image` | Yes | URL or base64 of the starting frame |
 | `motion_prompt` | Yes | Animation description (e.g., "walking cycle", "idle breathing", "attack slash") |
-| `image_type` | No | `sprite`, `sprite-vfx`, `ui_asset` |
+| `image_type` | No | `sprite` (default), `sprite-vfx`, `ui_asset` |
 | `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
-| `frame_size` | No | `32`, `64`, `96`, `128`, `192`, `256` (default), `384`, `0` (max resolution), `-1` (AI 1.5× upscale), `-9` (match input frame) |
+| `frame_size` | No | `0` (default, max resolution), `32`, `64`, `96`, `128`, `192`, `256`, `384`, `-1` (AI 1.5× upscale), `-9` (match input frame) |
 | `loop` | No | Seamless loop (default: true) |
 | `crop` | No | Crop frames to fit content; smaller spritesheets but inconsistent frame sizes |
 | `margin_ratio_horizontal` | No | Horizontal padding around the sprite as a ratio 0.0–1.0 (only used when `margin_ratio_mode` is `manual`). Useful for animations that extend sideways, e.g. sword slashes or punches |
@@ -262,7 +262,7 @@ Create animated spritesheets from static images.
 | `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
 | `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
 | `model` | No | `blitz` (default; most reliable and predictable, can struggle with very short animations), `forge` (best for basic animations and relatively simple sprites), `eagle` (for complex motion or visually complex sprites), `eagle-audio` (same visuals as Eagle, plus audio generation). Legacy alias: `standard`→`blitz` |
-| `duration` | No | Depends on model: Blitz: `1.2`–`4`s (1.2, 1.5, 2, 2.5, 3, 3.5, 4); Forge: `1`–`4`s in 0.5 steps; Eagle / Eagle with Audio: `1`–`4`s |
+| `duration` | No | Default `3`s. Depends on model: Blitz: `1.2`–`4`s (1.2, 1.5, 2, 2.5, 3, 3.5, 4); Forge: `1`–`4`s in 0.5 steps; Eagle / Eagle with Audio: `1`–`4`s. A model that does not offer 3s falls back to its shortest |
 | `final_image` | No | Ending frame for interpolation |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
@@ -271,14 +271,14 @@ Create animated spritesheets from static images.
 
 **Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`
 
-**Credits:** Varies by duration and model, each with a 4-credit minimum - Forge: 1.5/sec, Blitz: 1.9/sec, Eagle: 2.6/sec, Eagle with Audio: 3.1/sec (e.g. Blitz 3s ≈ 5.7).
+**Credits:** Varies by duration and model, each with a 4-credit minimum - Forge: 1.5/sec, Blitz: 1.9/sec, Eagle: 2.6/sec, Eagle with Audio: 3.1/sec. The default 3s on the default Blitz model is 5.7.
 **Processing time:** 30-90 seconds
 
 ---
 
 ### Keyframe Animation (`animateSpriteKeyframes`)
 
-Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_image`, `final_image`), producing a spritesheet that interpolates through the provided frames in order. Always runs on the Forge model (no `model` parameter; Forge is the only model supporting middle keyframes). The motion prompt is optional here: when omitted, the motion is derived purely from the keyframes. Use `animateSprite` instead for the classic single-image + text-prompt animation with model choice.
+Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_image`, `final_image`), producing a spritesheet that interpolates through the provided frames in order. Runs on the Forge family, the only models supporting middle keyframes: `forge` (default) or `forge-pixel` for pixel-art sprites. The motion prompt is optional here: when omitted, the motion is derived purely from the keyframes. Use `animateSprite` instead for the classic single-image + text-prompt animation with model choice.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -286,9 +286,10 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 | `middle_image` | No* | URL or base64 of the middle keyframe the animation passes through |
 | `final_image` | No | URL or base64 of the final keyframe |
 | `motion_prompt` | No | Optional animation description (e.g., "attack slash"); without it the keyframes drive the motion |
-| `image_type` | No | `sprite`, `sprite-vfx`, `ui_asset` |
+| `image_type` | No | `sprite` (default), `sprite-vfx`, `ui_asset` |
+| `model` | No | `forge` (default) or `forge-pixel` for pixel-art sprites |
 | `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
-| `frame_size` | No | `32`, `64`, `96`, `128`, `192`, `256` (default), `384`, `0` (max resolution), `-1` (AI 1.5× upscale), `-9` (match input frame) |
+| `frame_size` | No | `0` (default, max resolution), `32`, `64`, `96`, `128`, `192`, `256`, `384`, `-1` (AI 1.5× upscale), `-9` (match input frame) |
 | `loop` | No | Seamless loop (default: true) |
 | `crop` | No | Crop frames to fit content; smaller spritesheets but inconsistent frame sizes |
 | `margin_ratio_horizontal` | No | Horizontal padding around the sprite as a ratio 0.0–1.0 (only used when `margin_ratio_mode` is `manual`) |
@@ -296,7 +297,7 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 | `margin_ratio` | No | *Deprecated* - uniform padding on both axes; cannot be combined with the per-axis params (fails with 400) |
 | `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
 | `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
-| `duration` | No | Forge durations: `1`–`4`s in 0.5 steps (default: 1) |
+| `duration` | No | Forge durations: `1`–`4`s in 0.5 steps (default: 3). Three keyframes need the room: at 1s the opening transition is compressed away |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
@@ -304,7 +305,7 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 
 **Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...)
 
-**Credits:** Forge only, 1.5 credits/sec with a 4-credit minimum (1s–2.5s = 4, 3s = 4.5, 3.5s ≈ 5.3, 4s = 6)
+**Credits:** Forge family only, 1.5 credits/sec with a 4-credit minimum (1s–2.5s = 4, the default 3s = 4.5, 3.5s ≈ 5.3, 4s = 6)
 **Processing time:** 30-90 seconds
 
 ---
@@ -344,13 +345,13 @@ Transfer motion from a video or animation preset onto a static sprite, producing
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
-| `model` | No | `tango` (default), most powerful for demanding use cases; `forge`, cost-effective for simple motion, works best with presets and matching poses |
+| `model` | No | `forge` (default), cost-effective for simple motion, works best with presets and matching poses; `tango`, most powerful for demanding use cases |
 | `duration` | No | Animation length in seconds: `1`–`4` (default 1.5). If the reference video is longer, it is compressed to this duration |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`
 
-**Credits:** Varies by duration and model, 4-credit minimum. Tango: 4 credits/sec (default 1.5s = 6, up to 16 at 4s); Forge: 2 credits/sec (1.5s = 4, up to 8 at 4s)
+**Credits:** Varies by duration and model, 4-credit minimum. Forge (default): 2 credits/sec (the default 1.5s = 4, up to 8 at 4s); Tango: 4 credits/sec (1.5s = 6, up to 16 at 4s)
 
 ---
 
@@ -389,12 +390,12 @@ Generate short videos from images.
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64 starting frame |
 | `prompt` | Yes | Motion description (e.g., "camera zooms in", "character walks forward") |
-| `duration` | No | Depends on model (defaults to the model's shortest): Blitz: `2`–`12`s; Eagle / Eagle with Audio: `1`–`15`s |
-| `model` | No | `blitz` (default), `eagle`, `eagle-audio`. Legacy alias: `standard`→`blitz` |
+| `duration` | No | Default `5`s. Blitz: `2`–`12`s; Eagle / Eagle with Audio: `1`–`15`s |
+| `model` | No | `eagle` (default), `blitz`, `eagle-audio`. Legacy alias: `standard`→`blitz` |
 | `final_image` | No | Ending frame for interpolation |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Credits:** Varies by duration and model. Standard model: 1 credit/sec (3s = 3, 5s = 5, 8s = 8, 10s = 10). Higher-quality models cost more per second.
+**Credits:** Varies by duration and model. Eagle, the default, is 1.3 credits/sec, so the default 5s is 6.5. Blitz is 1 credit/sec (5s = 5).
 
 ---
 
@@ -473,6 +474,7 @@ Generate ambient soundscapes and background atmospheres from text descriptions.
 |-----------|----------|-------------|
 | `description` | Yes | Ambiance description (e.g., "windy forest at dusk", "busy medieval market", "spaceship engine hum") |
 | `duration` | No | Duration in seconds (0 = automatic, based on the description) |
+| `loop` | No | Generate a seamlessly looping ambience (default: true) |
 | `augment_prompt` | No | Augment the prompt behind the scenes (default: true) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
@@ -503,7 +505,7 @@ Remix or transform an existing audio sample using a text prompt.
 | `sample` | Yes | URL or base64-encoded source audio sample to remix (15MB max) |
 | `prompt` | Yes | Description guiding the remix (e.g., "make it sound like an 80s synthwave track") |
 | `duration` | No | Duration in seconds: `0` (automatic, matches the source) or `10`–`180` in steps of 10 |
-| `modification_strength` | No | How strongly the source is modified (0 = close to original) |
+| `modification_strength` | No | How strongly the source is modified, 0–1 (default: 0.6; 0 = close to original) |
 | `augment_prompt` | No | Augment the prompt behind the scenes (default: true) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
