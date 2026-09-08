@@ -12,6 +12,7 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 | **Video** | Generate short videos from images or reference images (1-15 seconds, varies by model), prompt-driven video editing, 2x upscaling |
 | **Audio** | Sound effects, background music, character voices, TTS |
 | **Jobs & History** | Async job queue: submit, poll or long-poll, list and cancel jobs (queued jobs refund their credits), plus paginated generation history across the API and the web app |
+| **Documentation** | Read Ludo's own feature guidance before generating: animation modes, model choice, margins, known limitations |
 
 ## Quick Start
 
@@ -58,6 +59,28 @@ Add to your MCP settings in Cursor preferences:
 ## Available Tools
 
 Generation tools run on a job queue and return a job id immediately; the **Returns** field of each tool below describes the `result` you get back from `getApiJob` once the job succeeds. See [How Generation Calls Work](#how-generation-calls-work).
+
+### Feature Documentation (`getDocs`)
+
+Read Ludo's own guidance for a feature before generating with it: how to choose a sprite animation mode, when to use Generate Before / Generate After, how margins behave, which model suits a job, and each generator's known limitations. This is the same documentation the Ludo web app shows its users, so it occasionally describes buttons rather than parameters; the substance applies here just the same.
+
+Call it with no parameters first to get a table of contents, then again with `doc` (and ideally `sections`) to read only what you need. The whole corpus is roughly 280,000 characters, so fetching a full document without naming sections can return tens of thousands of characters.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `doc` | No | Document to read. Omit for the table of contents. One of `assistant`, `game-ideator`, `image-generator`, `project`, `account`, `faq`, `3d-generator`, `video-generator`, `sprite-generator`, `audio-generator`, `api-mcp`, `game-asset-generation` |
+| `sections` | No | Comma-separated section titles to return from `doc`, matched case-insensitively. Only valid together with `doc` |
+
+**Returns:**
+- `docs`: Array of `{ id, label, sections }`, where each section is `{ title, content }`. `content` is markdown, and is omitted from the table of contents
+
+An unknown `doc` or section title returns `400` listing the valid values, so a wrong guess costs one extra call rather than a dead end.
+
+The server also announces this tool to MCP clients via its `instructions` field during the initialize handshake, so models connected through clients that surface server instructions are told to consult it before generating.
+
+**Credits:** Free
+
+---
 
 ### Image Generation (`createImage`)
 
@@ -646,7 +669,7 @@ getApiJob with id="job_abc123", wait=30
 ## Fair Use Limits
 
 - **50 generations queued or running per account.** Submitting beyond that returns `429` with code `PENDING_JOBS_LIMIT`; wait for jobs to finish, then submit again.
-- **150 requests per 5 minutes** on the read endpoints (job status, job listing, generation history), per API key. A `429` carries `Retry-After`.
+- **150 requests per 5 minutes** on the read endpoints (job status, job listing, generation history, feature documentation), per API key. A `429` carries `Retry-After`.
 
 ## Finding Results Later
 
