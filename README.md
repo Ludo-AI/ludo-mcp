@@ -650,7 +650,7 @@ List your generation history across both the API and the Ludo web studio, with f
 
 Every generation runs on a job queue, and **over MCP every generation tool is asynchronous**. A generation call returns `{id, status: "queued"}` right away instead of blocking, so nothing is held open while a GPU runs and no MCP transport can time out mid-generation. You then collect the result with `getApiJob`. There is no `async` parameter on the MCP tools: it is not a knob you need to set.
 
-(If you call the REST API directly rather than through MCP, `async` is a payload flag there. Synchronous is still the REST default until **September 10, 2026**, after which requests default to async and return a job id; `async: false` keeps synchronous behaviour during and after the transition, and stays supported indefinitely.)
+(The REST API works the same way if you call it directly rather than through MCP: requests default to async and return `202` with a job id. Synchronous responses are deprecated there, but passing `async: false` in the payload still opts into them and stays supported indefinitely.)
 
 ### Collecting a result
 
