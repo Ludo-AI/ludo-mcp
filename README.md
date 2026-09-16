@@ -12,7 +12,7 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 | **Video** | Generate short videos from images or reference images (1-15 seconds, varies by model), prompt-driven video editing, 2x upscaling |
 | **Audio** | Sound effects, background music, character voices, TTS |
 | **Jobs & History** | Async job queue: submit, poll or long-poll, list and cancel jobs (queued jobs refund their credits), plus paginated generation history across the API and the web app |
-| **Documentation** | Read Ludo's own feature guidance before generating: animation modes, model choice, margins, known limitations |
+| **Documentation** | Search or read Ludo's own feature guidance before generating: animation modes, model choice, margins, known limitations |
 
 ## Quick Start
 
@@ -60,23 +60,43 @@ Add to your MCP settings in Cursor preferences:
 
 Generation tools run on a job queue and return a job id immediately; the **Returns** field of each tool below describes the `result` you get back from `getApiJob` once the job succeeds. See [How Generation Calls Work](#how-generation-calls-work).
 
+### Search Documentation (`searchDocs`)
+
+Ask Ludo's own documentation a plain-language question and get back only the few sections that answer it: how to choose a sprite animation mode, when to use Generate Before / Generate After, how margins behave, which model suits a job, what something costs, and each generator's known limitations. This is the fastest way to learn how a feature is meant to be used before generating with it, so start here rather than reading whole documents.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `query` | Yes | What you want to know, in plain language (up to 500 characters), e.g. "how do I keep a sprite animation's colors consistent" |
+| `n` | No | Maximum number of sections to return (1-10, default: 3) |
+
+**Returns:**
+- `results`: Array of `{ doc, label, section, relevance, content }`, best first. `content` is the section's full markdown; `doc` and `section` can be passed straight to `getDocs` to read it again. `relevance` is a 0-1 match score, and only results scoring 0.6 or higher are returned
+- `message`: Present only when `results` is empty, which means the documentation does not cover the question. Rephrase it, or browse with `getDocs`
+
+If the search backend is briefly unavailable the tool returns `503`; fall back to `getDocs` rather than retrying in a loop.
+
+**Credits:** Free
+
+---
+
 ### Feature Documentation (`getDocs`)
 
-Read Ludo's own guidance for a feature before generating with it: how to choose a sprite animation mode, when to use Generate Before / Generate After, how margins behave, which model suits a job, and each generator's known limitations. This is the same documentation the Ludo web app shows its users, so it occasionally describes buttons rather than parameters; the substance applies here just the same.
+Browse or read Ludo's documentation in full. This is the same documentation the Ludo web app shows its users, so it occasionally describes buttons rather than parameters; the substance applies here just the same. To answer a specific question, use `searchDocs` first.
 
-Call it with no parameters first to get a table of contents, then again with `doc` (and ideally `sections`) to read only what you need. The whole corpus is roughly 280,000 characters, so fetching a full document without naming sections can return tens of thousands of characters.
+Call it with no parameters to get a table of contents, then again with `doc` (and ideally `sections`) to read only what you need. The whole corpus is roughly 280,000 characters, so fetching a full document without naming sections can return tens of thousands of characters.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `doc` | No | Document to read. Omit for the table of contents. One of `assistant`, `game-ideator`, `image-generator`, `project`, `account`, `faq`, `3d-generator`, `video-generator`, `sprite-generator`, `audio-generator`, `api-mcp`, `game-asset-generation` |
-| `sections` | No | Comma-separated section titles to return from `doc`, matched case-insensitively. Only valid together with `doc` |
+| `sections` | No | Section titles to return from `doc`, matched ignoring case, spacing and punctuation. Only valid together with `doc` |
 
 **Returns:**
 - `docs`: Array of `{ id, label, sections }`, where each section is `{ title, content }`. `content` is markdown, and is omitted from the table of contents
+- `unmatched_sections` / `available_sections`: Present only when some, but not all, requested titles matched: the titles that matched nothing, and every valid title of `doc`
 
-An unknown `doc` or section title returns `400` listing the valid values, so a wrong guess costs one extra call rather than a dead end.
+An unknown `doc`, or a request where no section title matches, returns `400` listing the valid values, so a wrong guess costs one extra call rather than a dead end.
 
-The server also announces this tool to MCP clients via its `instructions` field during the initialize handshake, so models connected through clients that surface server instructions are told to consult it before generating.
+The server also announces both documentation tools to MCP clients via its `instructions` field during the initialize handshake, so models connected through clients that surface server instructions are told to search the documentation before generating.
 
 **Credits:** Free
 
@@ -670,6 +690,7 @@ getApiJob with id="job_abc123", wait=30
 
 - **50 generations queued or running per account.** Submitting beyond that returns `429` with code `PENDING_JOBS_LIMIT`; wait for jobs to finish, then submit again.
 - **150 requests per 5 minutes** on the read endpoints (job status, job listing, generation history, feature documentation), per API key. A `429` carries `Retry-After`.
+- **60 requests per 5 minutes, and 1,000 per day,** on documentation search (`searchDocs`), per API key.
 
 ## Finding Results Later
 

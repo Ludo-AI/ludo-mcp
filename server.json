@@ -149,6 +149,11 @@
           "note": "upscaleVideo with video='<url from createVideo/createVideoFromReferences/editVideo>' - 2x upscale for videos below 960x960 pixels, flat 0.2 credits/sec; the URL must be from your own generation in the last 7 days"
         },
         {
+          "name": "Look Up How a Feature Works",
+          "description": "Ask Ludo's own documentation before generating with an unfamiliar feature",
+          "note": "searchDocs with query='how do I pick a sprite animation mode' returns the few matching sections ({doc, section, relevance, content}); getDocs with no arguments lists every document and section, and getDocs with doc and sections reads them in full. Both are free"
+        },
+        {
           "name": "Collect a Generation Result",
           "description": "Pick up the asset from the job a generation tool returned",
           "note": "Generation tools return {id, status:'queued'} immediately. Call getApiJob with that id, optionally wait=30 to long-poll (max 60), until status is 'succeeded' and read its result field, which is exactly the response documented for that tool. On 'failed' read error instead"
@@ -200,7 +205,7 @@
         "On the REST API the same queue works the same way: requests default to async and return 202 with a job id. Synchronous responses are deprecated there; passing async: false in the payload opts into them and stays supported indefinitely",
         "Job tools are free: getApiJob (status/result, optional wait long-poll), listApiJobs (recent API/MCP jobs, filter by status, limit capped at 100), cancelApiJob (cancels a still-queued job and refunds its credits)",
         "listGenerations is the free, paginated generation history across both surfaces: filter by type, by source (api|web|all), by free-text search, by request_id or by date. It replaces the removed per-type results tools (getImageResults, getSpriteResults, getVideoResults, getAudioResults, get3DModelResults), which are deprecated in the REST API",
-        "Fair use: up to 50 generations queued or running per account (further submissions return 429 with code PENDING_JOBS_LIMIT), and 150 requests per 5 minutes per API key on the read endpoints (job status, job listing, generation history); a 429 carries Retry-After",
+        "Fair use: up to 50 generations queued or running per account (further submissions return 429 with code PENDING_JOBS_LIMIT), and 150 requests per 5 minutes per API key on the read endpoints (job status, job listing, generation history, documentation reads), 60 per 5 minutes and 1,000 per day on documentation search; a 429 carries Retry-After",
         "All generated asset URLs are temporary Google Cloud Storage links that expire after 7 days: download and save assets locally (or re-upload to permanent storage) before they expire, especially anything destined for production use; never store the returned URLs as permanent references"
       ]
     }
