@@ -8,8 +8,8 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 |----------|-------------|
 | **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal |
 | **3D Models** | Convert 2D images to GLB models with PBR textures, auto-rig models (skeleton + skin weights, engine-ready joint naming), text-driven skeletal animation, retarget curated animation presets onto rigged models |
-| **Animation** | Animated spritesheets from static sprites (4-64 frames), keyframe animation through up to three fixed frames, motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing) |
-| **Video** | Generate short videos from images or reference images (1-15 seconds, varies by model), prompt-driven video editing, 2x upscaling |
+| **Animation** | Animated spritesheets from static sprites (4-64 frames), keyframe animation through up to three fixed frames, motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing), sound effects for a spritesheet |
+| **Video** | Generate short videos from images or reference images (5-15 seconds, with a soundtrack), prompt-driven video editing, 2x upscaling |
 | **Audio** | Sound effects, background music, character voices, TTS |
 | **Jobs & History** | Async job queue: submit, poll or long-poll, list and cancel jobs (queued jobs refund their credits), plus paginated generation history across the API and the web app |
 | **Documentation** | Search or read Ludo's own feature guidance before generating: animation modes, model choice, margins, known limitations |
@@ -59,6 +59,21 @@ Add to your MCP settings in Cursor preferences:
 ## Available Tools
 
 Generation tools run on a job queue and return a job id immediately; the **Returns** field of each tool below describes the `result` you get back from `getApiJob` once the job succeeds. See [How Generation Calls Work](#how-generation-calls-work).
+
+### Models
+
+Sprite animation, motion transfer, spritesheet editing and video generation take an optional `model`. Pick from the current models; the defaults are what the Ludo web app uses.
+
+| Model | Used for | Notes |
+|-------|----------|-------|
+| `hydra` | Sprite animation (default), keyframes (default), motion transfer, spritesheet editing | Most capable model; its spritesheets come with a generated sound effect (`audio_b64`). 3 credits/s, shortest animation 3s (9 credits minimum) |
+| `forge` | Motion transfer (default), spritesheet editing (default), sprite animation, keyframes | Cost-effective; tuned for presets and matching poses. 1.5 credits/s on animation, 2 credits/s on transfer and editing, 4-credit minimum charge |
+| `forge-pixel` | Same actions as `forge` | Same pricing as `forge`; for low-res pixel-art sprites |
+| `griffin` | Video generation (default), video from references (default) | Fast cinematic 480p video with a soundtrack. 1.5 credits/s (2.5 credits/s from references), 5s minimum |
+| `griffin-hd` | Video editing (default), video generation, video from references | Same as Griffin in 720p. 2 credits/s (4 credits/s from references), 5s minimum. Its output is too large for `upscaleVideo` |
+
+**Legacy models** - `blitz`, `eagle`, `eagle-audio`, `tango` (and the alias `standard`) - are still accepted so existing integrations keep working, but they are scheduled for removal. Do not use them for new work. The server marks them `LEGACY` in every tool description and lists them last.
+
 
 ### Search Documentation (`searchDocs`)
 
@@ -200,7 +215,7 @@ Remove the background from a single image, returning the subject isolated on a t
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64-encoded image |
 | `crop` | No | Trim the result to the subject's bounding box (default: false) |
-| `creative_edit` | No | Higher-quality output that may not match the input pixel-for-pixel (default: true) |
+| `creative_edit` | No | Higher-quality output that may not match the input pixel-for-pixel (default: true). Set false when the subject must stay pixel-identical, e.g. an existing sprite you will animate |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** a single result with `url` (transparent PNG)
@@ -288,7 +303,7 @@ Apply a curated animation preset to an **already-rigged** 3D model (retargeting)
 
 ### Sprite Animation (`animateSprite`)
 
-Create animated spritesheets from static images.
+Create animated spritesheets from static images. Use this when you can describe the motion in text; use `transferMotion` to copy an exact motion from a reference video or a named preset, and `generatePose` first when the source image is not yet in the pose the animation should start from.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -298,30 +313,30 @@ Create animated spritesheets from static images.
 | `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
 | `frame_size` | No | `0` (default, max resolution), `32`, `64`, `96`, `128`, `192`, `256`, `384`, `-1` (AI 1.5× upscale), `-9` (match input frame) |
 | `loop` | No | Seamless loop (default: true) |
-| `crop` | No | Crop frames to fit content; smaller spritesheets but inconsistent frame sizes |
+| `crop` | No | Crop frames to fit content (default: true); smaller spritesheets but inconsistent frame sizes across animations |
 | `margin_ratio_horizontal` | No | Horizontal padding around the sprite as a ratio 0.0–1.0 (only used when `margin_ratio_mode` is `manual`). Useful for animations that extend sideways, e.g. sword slashes or punches |
 | `margin_ratio_vertical` | No | Vertical padding around the sprite as a ratio 0.0–1.0 (only used when `margin_ratio_mode` is `manual`). Useful for animations that extend up or down, e.g. jumps |
 | `margin_ratio` | No | *Deprecated* - uniform padding on both axes, equivalent to setting both per-axis params to the same value. Cannot be combined with the per-axis params (fails with 400) |
 | `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
 | `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
-| `model` | No | `blitz` (default; most reliable and predictable, can struggle with very short animations), `forge` (best for basic animations and relatively simple sprites), `eagle` (for complex motion or visually complex sprites), `eagle-audio` (same visuals as Eagle, plus audio generation). Legacy alias: `standard`→`blitz` |
-| `duration` | No | Default `3`s. Depends on model: Blitz: `1.2`–`4`s (1.2, 1.5, 2, 2.5, 3, 3.5, 4); Forge: `1`–`4`s in 0.5 steps; Eagle / Eagle with Audio: `1`–`4`s. A model that does not offer 3s falls back to its shortest |
+| `model` | No | `hydra` (default; most capable, generates audio), `forge` (best for basic animations and relatively simple sprites), `forge-pixel` (low-res pixel art). Legacy, avoid for new work: `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
+| `duration` | No | Default `3`s. Hydra: `3`–`5`s in 0.5 steps; Forge / Forge Pixel: `1`–`5`s in 0.5 steps. A model that does not offer the requested default falls back to its shortest |
 | `final_image` | No | Ending frame for interpolation |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`
+**Returns:** `spritesheet_url` (the sheet), `video_url` (an mp4 of the animation - pass it to `transferMotion` as `video` or to `createSpriteAudio` as `spritesheet_video_url`), `audio_b64` (hydra only: a generated sound effect, so there is no need to call `createSpriteAudio`), `num_frames`, `num_cols`, `num_rows`, and when requested `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`
 
-**Credits:** Varies by duration and model, each with a 4-credit minimum - Forge: 1.5/sec, Blitz: 1.9/sec, Eagle: 2.6/sec, Eagle with Audio: 3.1/sec. The default 3s on the default Blitz model is 5.7.
+**Credits:** rate × seconds, with a per-model floor - Hydra: 3/sec (shortest 3s, so 9 minimum; the default 3s = 9); Forge and Forge Pixel: 1.5/sec with a 4-credit minimum (3s = 4.5). Legacy: Blitz 1.9/sec, Eagle 2.6/sec, Eagle with Audio 3.1/sec, all with a 4-credit minimum.
 **Processing time:** 30-90 seconds
 
 ---
 
 ### Keyframe Animation (`animateSpriteKeyframes`)
 
-Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_image`, `final_image`), producing a spritesheet that interpolates through the provided frames in order. Runs on the Forge family, the only models supporting middle keyframes: `forge` (default) or `forge-pixel` for pixel-art sprites. The motion prompt is optional here: when omitted, the motion is derived purely from the keyframes. Use `animateSprite` instead for the classic single-image + text-prompt animation with model choice.
+Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_image`, `final_image`), producing a spritesheet that interpolates through the provided frames in order. Runs on `hydra` (default), `forge` or `forge-pixel` - the models that support a middle keyframe. The motion prompt is optional here: when omitted, the motion is derived purely from the keyframes. For just a start and end frame, `animateSprite` with `final_image` does the same job.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -330,25 +345,25 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 | `final_image` | No | URL or base64 of the final keyframe |
 | `motion_prompt` | No | Optional animation description (e.g., "attack slash"); without it the keyframes drive the motion |
 | `image_type` | No | `sprite` (default), `sprite-vfx`, `ui_asset` |
-| `model` | No | `forge` (default) or `forge-pixel` for pixel-art sprites |
+| `model` | No | `hydra` (default; generates audio), `forge`, or `forge-pixel` for pixel-art sprites |
 | `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
 | `frame_size` | No | `0` (default, max resolution), `32`, `64`, `96`, `128`, `192`, `256`, `384`, `-1` (AI 1.5× upscale), `-9` (match input frame) |
 | `loop` | No | Seamless loop (default: true) |
-| `crop` | No | Crop frames to fit content; smaller spritesheets but inconsistent frame sizes |
+| `crop` | No | Crop frames to fit content (default: true); smaller spritesheets but inconsistent frame sizes |
 | `margin_ratio_horizontal` | No | Horizontal padding around the sprite as a ratio 0.0–1.0 (only used when `margin_ratio_mode` is `manual`) |
 | `margin_ratio_vertical` | No | Vertical padding around the sprite as a ratio 0.0–1.0 (only used when `margin_ratio_mode` is `manual`) |
 | `margin_ratio` | No | *Deprecated* - uniform padding on both axes; cannot be combined with the per-axis params (fails with 400) |
 | `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
 | `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
-| `duration` | No | Forge durations: `1`–`4`s in 0.5 steps (default: 3). Three keyframes need the room: at 1s the opening transition is compressed away |
+| `duration` | No | Default `3`s. Hydra: `3`–`5`s; Forge / Forge Pixel: `1`–`5`s in 0.5 steps. Three keyframes need the room: at 1s the opening transition is compressed away |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...)
+**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_b64` on hydra, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...)
 
-**Credits:** Forge family only, 1.5 credits/sec with a 4-credit minimum (1s–2.5s = 4, the default 3s = 4.5, 3.5s ≈ 5.3, 4s = 6)
+**Credits:** same as `animateSprite` - Hydra 3/sec (3s = 9); Forge / Forge Pixel 1.5/sec with a 4-credit minimum (1s–2.5s = 4, 3s = 4.5, 4s = 6)
 **Processing time:** 30-90 seconds
 
 ---
@@ -368,19 +383,19 @@ List available animation presets, used by `transferMotion` (onto a sprite) and `
 
 ### Motion Transfer (`transferMotion`)
 
-Transfer motion from a video or animation preset onto a static sprite, producing an animated spritesheet.
+Transfer motion from a video or animation preset onto a static sprite, producing an animated spritesheet. Use it when you want an exact motion copied - a standard walk or attack cycle from `listAnimationPresets`, or your own clip; use `animateSprite` to describe the motion in text instead.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64-encoded sprite image |
-| `video` | No | URL of the video to use as motion source. You can use videos from the animateSprite endpoint or provide your own. Videos up to 4 seconds will produce better results. Either `video` or `preset_id` + `perspective` + `direction` must be provided. |
-| `preset_id` | No | ID of an animation preset to use instead of a video URL. Use the animation-presets endpoint to list available presets. When using a preset, `perspective` and `direction` are required. |
-| `direction` | No | Direction for the animation preset. When using a preset, `direction` is required. Values: `N`, `NE`, `E`, `SE`, `S`, `SW`, `W`, `NW` |
-| `perspective` | No | Perspective ID to use with the animation preset. When using a preset, `perspective` is required. |
-| `frames` | No | Number of frames in the output spritesheet |
-| `frame_size` | No | Size of each frame in pixels |
-| `loop` | No | Trim animation for seamless loop |
-| `crop` | No | Crop frames to fit content |
+| `video` | No | URL of the video to use as motion source: the `video_url` of a spritesheet from `animateSprite`, or your own clip. Videos up to 4 seconds work best. Either `video` or `preset_id` + `perspective` + `direction` must be provided; when both are sent the video is used |
+| `preset_id` | No | ID of an animation preset to use instead of a video URL, from `listAnimationPresets`. When using a preset, `perspective` and `direction` are required |
+| `direction` | No | Facing direction for the preset, as a compass point: `N`, `NE`, `E`, `SE`, `S`, `SW`, `W`, `NW`. Required with a preset |
+| `perspective` | No | Camera perspective of the preset clip, the same set for every preset: `high` (tactical, steep top-down), `horizon` (side view at eye level), `isometric` (diagonal top-down with depth), `low` (hero, low angle), `top` (directly overhead). Required with a preset |
+| `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
+| `frame_size` | No | `0` (default, max resolution), `32`, `64`, `96`, `128`, `192`, `256`, `384` |
+| `loop` | No | Trim animation for a seamless loop (default: true) |
+| `crop` | No | Crop frames to fit content (default: true) |
 | `margin_ratio_horizontal` | No | Horizontal padding around the sprite (0.0–1.0). Useful for animations that extend sideways, e.g. sword slashes or punches |
 | `margin_ratio_vertical` | No | Vertical padding around the sprite (0.0–1.0). Useful for animations that extend up or down, e.g. jumps |
 | `margin_ratio` | No | *Deprecated* - uniform padding on both axes (0.0–1.0, default 0.15 when no margin is given). Cannot be combined with the per-axis params (fails with 400) |
@@ -388,19 +403,19 @@ Transfer motion from a video or animation preset onto a static sprite, producing
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
-| `model` | No | `forge` (default), cost-effective for simple motion, works best with presets and matching poses; `tango`, most powerful for demanding use cases |
-| `duration` | No | Animation length in seconds: `1`–`4` (default 1.5). If the reference video is longer, it is compressed to this duration |
+| `model` | No | `forge` (default; cost-effective, works best with presets and matching poses), `forge-pixel` (pixel art), `hydra` (most capable, generates audio). Legacy, avoid for new work: `tango` |
+| `duration` | No | Animation length in seconds (default 1.5; on hydra, which starts at 3s, an omitted duration becomes 3). Forge / Forge Pixel: `1`–`5`s in 0.5 steps; Hydra: `3`–`5`s. A longer reference clip or preset is compressed to fit, so pass the preset's own `duration` to keep its timing |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** `spritesheet_url`, `video_url`, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`
+**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_b64` on hydra, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`)
 
-**Credits:** Varies by duration and model, 4-credit minimum. Forge (default): 2 credits/sec (the default 1.5s = 4, up to 8 at 4s); Tango: 4 credits/sec (1.5s = 6, up to 16 at 4s)
+**Credits:** rate × seconds - Forge / Forge Pixel (default): 2/sec with a 4-credit minimum (the default 1.5s = 4, 3s = 6); Hydra: 3/sec (3s = 9). Legacy Tango: 4/sec. The produced length follows the reference clip, and you are never charged for more than you requested
 
 ---
 
 ### Edit Spritesheet (`editSpritesheet`)
 
-Edit a spritesheet you previously generated: re-prompt its animation, outpaint beyond the frame, or repair a bad loop. Pass back the `spritesheet_url` you received from `animateSprite`, `transferMotion`, or an earlier edit; it must be a spritesheet you generated in the last 7 days (external URLs are not accepted).
+Edit a spritesheet you previously generated: re-prompt its animation, outpaint beyond the frame (zoom out), or repair a bad loop. Pass back the `spritesheet_url` you received from `animateSprite`, `animateSpriteKeyframes`, `transferMotion`, or an earlier edit; it must be a spritesheet you generated in the last 7 days (external URLs are not accepted). Omit `duration`, `frames`, `frame_size`, `crop` and `model` to keep the source spritesheet's values.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -408,9 +423,9 @@ Edit a spritesheet you previously generated: re-prompt its animation, outpaint b
 | `edit_mode` | No | `prompt` (default), re-prompt the animation; `outpaint`, extend beyond the frame; `fix_loop`, repair a bad loop |
 | `prompt` | No | Edit instruction. Required for `prompt` mode, optional for `outpaint`, not accepted for `fix_loop` |
 | `images` | No | Up to 5 reference images (URL or base64) to guide the edit |
-| `duration` | No | Output length in seconds: `1`–`4`. Defaults to the source spritesheet's duration |
-| `model` | No | `forge` (default) |
-| `crop` | No | Crop frames to fit content |
+| `duration` | No | Output length in seconds (per model, as on `animateSprite`). Omit to keep the source spritesheet's duration, which is also what the flat `fix_loop` / `outpaint` rate is billed on |
+| `model` | No | `forge` (default), `forge-pixel`, `hydra`. Only used by `prompt` mode; `outpaint` and `fix_loop` run a fixed pipeline and ignore it |
+| `crop` | No | Crop frames to fit content. Omit to keep the source's setting |
 | `loop` | No | Trim animation for seamless loop (default: true) |
 | `frames` | No | Frames in the output spritesheet: `4`, `9`, `16`, `25`, `36`, `49`, `64`. Defaults to the source's frame count |
 | `frame_size` | No | Frame size in pixels: `32`–`384`, or `0` for max resolution. Defaults to the source's frame size |
@@ -419,26 +434,44 @@ Edit a spritesheet you previously generated: re-prompt its animation, outpaint b
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact (default: false) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...)
+**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...). Audio is generated only by `prompt` edits on hydra; a fix on a hydra sheet comes back without `audio_b64`
 
-**Credits:** Varies by duration: 2 credits/sec with a 4-credit minimum (3s = 6, 4s = 8)
+**Credits:** `fix_loop` and `outpaint`: flat 1 credit per second of output, no minimum, model ignored (a 3s sheet = 3). `prompt` edits: per model - Forge / Forge Pixel 2/sec with a 4-credit minimum (3s = 6), Hydra 3/sec (3s = 9)
+
+---
+
+### Spritesheet Sound Effect (`createSpriteAudio`)
+
+Generate a sound effect for a spritesheet animation you previously generated. Spritesheets made with `hydra` already come with `audio_b64`, so call this for `forge` / `forge-pixel` output, or to replace hydra's sound.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `spritesheet_video_url` | Yes | The `video_url` you received from `animateSprite`, `animateSpriteKeyframes`, `transferMotion` or `editSpritesheet`; it must belong to a spritesheet you generated in the last 7 days |
+| `prompt` | No | What the sound should be, e.g. "metallic sword swing with a whoosh" |
+| `request_id` | No | Client-provided ID to find the job again; must not be one you already used for another generation |
+
+**Returns:** `url` of the generated audio file. The audio is also attached to the spritesheet, so it shows up as `audio_b64` on that item in `listGenerations`
+
+**Credits:** 3 per call
 
 ---
 
 ### Video Generation (`createVideo`)
 
-Generate short videos from images.
+Generate short videos from a source image and a motion prompt (image-to-video). A source `image` is required: to make a video from text alone, first `createImage` and animate that, or use `createVideoFromReferences`. Both current models generate a soundtrack, so no separate audio step is needed.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64 starting frame |
 | `prompt` | Yes | Motion description (e.g., "camera zooms in", "character walks forward") |
-| `duration` | No | Default `5`s. Blitz: `2`–`12`s; Eagle / Eagle with Audio: `1`–`15`s |
-| `model` | No | `eagle` (default), `blitz`, `eagle-audio`. Legacy alias: `standard`→`blitz` |
+| `duration` | No | Default `5`s. Griffin / Griffin HD: `5`–`15`s in 1s steps |
+| `model` | No | `griffin` (default; 480p, with soundtrack), `griffin-hd` (720p, with soundtrack; cannot be upscaled afterwards). Legacy, avoid for new work: `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
 | `final_image` | No | Ending frame for interpolation |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Credits:** Varies by duration and model. Eagle, the default, is 1.3 credits/sec, so the default 5s is 6.5. Blitz is 1 credit/sec (5s = 5).
+**Returns:** `url`, `duration`, `has_audio`
+
+**Credits:** rate × seconds - Griffin: 1.5/sec (the default 5s = 7.5); Griffin HD: 2/sec (5s = 10). Legacy: Blitz 1/sec, Eagle 1.3/sec, Eagle with Audio 1.8/sec.
 
 ---
 
@@ -450,14 +483,14 @@ Generate a video from 1-5 reference images and a text prompt. Unlike `createVide
 |-----------|----------|-------------|
 | `prompt` | Yes | Text description of the video to generate |
 | `images` | Yes | 1 to 5 reference images (URL or base64) |
-| `duration` | No | Video length in seconds: `1`–`15` (default 5) |
-| `model` | No | `eagle` (default), `eagle-audio` (adds a generated audio track) |
+| `duration` | No | Video length in seconds: `5`–`15` (default 5) |
+| `model` | No | `griffin` (default; 480p, with soundtrack), `griffin-hd` (720p). Legacy, avoid for new work: `eagle`, `eagle-audio` |
 | `aspect_ratio` | No | `default` (model chooses), `ar_1_1`, `ar_16_9`, `ar_9_16`, `ar_4_3`, `ar_3_4`, `ar_21_9` |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `url`, `duration`, `has_audio`
 
-**Credits:** Varies by duration and model. Eagle: 1.5 credits/sec (5s = 7.5); Eagle with Audio: 2 credits/sec (5s = 10)
+**Credits:** rate × seconds, higher than `createVideo` for the same model - Griffin: 2.5/sec (the default 5s = 12.5); Griffin HD: 4/sec (5s = 20). Legacy: Eagle 1.5/sec, Eagle with Audio 2/sec.
 
 ---
 
@@ -470,26 +503,26 @@ Edit a video you previously generated with a text prompt and optional reference 
 | `video` | Yes | URL of a video you generated in the last 7 days |
 | `prompt` | Yes | Edit instruction describing the desired change |
 | `images` | No | Up to 5 reference images (URL or base64) to guide the edit |
-| `duration` | No | Output length in seconds: `1`–`15`. Defaults to the source video's duration |
-| `model` | No | `eagle` (default) |
+| `duration` | No | Output length in seconds: `5`–`15`. Omit to keep the source video's duration |
+| `model` | No | `griffin-hd` (default; 720p, with soundtrack). Legacy, avoid for new work: `eagle` |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `url`, `duration`, `has_audio`
 
-**Credits:** Varies by duration: 2 credits/sec (5s = 10)
+**Credits:** Griffin HD: 2 credits/sec (5s = 10)
 
 ---
 
 ### Upscale Video (`upscaleVideo`)
 
-Upscale a video you previously generated to twice its resolution (2x). Pass back the `url` you received from `createVideo`, `createVideoFromReferences`, or `editVideo`; it must be a video you generated in the last 7 days (external URLs are not accepted). Only videos below 960x960 pixels can be upscaled; larger sources are rejected.
+Upscale a video you previously generated to twice its resolution (2x). Pass back the `url` you received from `createVideo`, `createVideoFromReferences`, or `editVideo`; it must be a video you generated in the last 7 days (external URLs are not accepted). Both dimensions of the source must be under 960 pixels: `griffin` (480p) output qualifies, `griffin-hd` (720p) output does not (landscape or portrait), so generate on `griffin` if you intend to upscale. A too-large source fails the job and the held credits are refunded.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `video` | Yes | URL of a video you generated in the last 7 days, below 960x960 pixels |
+| `video` | Yes | URL of a video you generated in the last 7 days, both dimensions under 960 pixels |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** `url`, `duration`, `has_audio`
+**Returns:** `url` (2x width and height, same duration), `duration`, `has_audio`
 
 **Credits:** Flat rate by duration, independent of model: 0.2 credits/sec (5s = 1)
 
@@ -610,7 +643,7 @@ Poll the status of a generation job started by any tool. Every job returns `{id,
 | `id` | Yes | Job id returned by the generation tool |
 | `wait` | No | Seconds to long-poll for a terminal state (0-60, default: 0). With `wait` the call is held open and returns the moment the job finishes |
 
-**Returns:** `id`, `status` (`queued`, `running`, `succeeded`, `failed`, `canceled`), `result` on success, `error` on failure, plus `poll_after_ms` on non-terminal responses (wait at least that long before polling again)
+**Returns:** `id`, `status` (`queued`, `running`, `succeeded`, `failed`, `canceled`), `result` on success, `error` (`{code, subcode, message, retriable}`) on failure, plus `poll_after_ms` on non-terminal responses (wait at least that long before polling again). Generations typically finish within a few minutes; a job still queued after 15 minutes can be cancelled and resubmitted
 
 **Credits:** Free
 
@@ -685,6 +718,10 @@ getApiJob with id="job_abc123", wait=30
 ```
 
 `result` is exactly the response the tool documents; on failure read `error` instead. Without `wait`, poll every few seconds and respect the `poll_after_ms` hint on non-terminal responses. Use `listApiJobs` to see what is still in flight and `cancelApiJob` to drop a job that has not started yet (its credits are refunded).
+
+### How credits are charged
+
+Credits are held when a job is accepted. For duration-priced tools (sprites and video) the final charge is `max(rate × produced seconds, the model's minimum charge)`, never more than for the duration you requested; the difference is refunded when the job completes. If the job fails or you cancel it while queued, everything is refunded. Each tool's **Credits** line above gives the rate and minimum; the server also states the contract once in its `instructions` field.
 
 ## Fair Use Limits
 
