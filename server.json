@@ -7,7 +7,7 @@
     "url": "https://github.com/Ludo-AI/ludo-mcp",
     "source": "github"
   },
-  "version": "0.13.0",
+  "version": "0.14.0",
   "websiteUrl": "https://ludo.ai",
   "remotes": [
     {
@@ -164,6 +164,11 @@
           "note": "listApiJobs returns your recent API/MCP jobs, filterable by a comma-separated status list (queued, running, succeeded, failed, canceled). cancelApiJob with a job id cancels a job that is still queued and refunds its credits; a job that already started cannot be canceled (409)"
         },
         {
+          "name": "Check Credits Before Generating",
+          "description": "See the credit balance, plan and auto top-up before an expensive job",
+          "note": "getAccount (no arguments) returns credits.available (what generations can spend now), plan_credits, used, extra, resets_at, team_pool, plus plan, auto_topup and a billing_url where credits are bought. Free; check it instead of waiting for a 402"
+        },
+        {
           "name": "Browse Generation History",
           "description": "Search past generations from both the API and the web app",
           "note": "listGenerations with type='spritesheet' and optional source='api'|'web'|'all', search='dwarf axe', request_id, date_from/date_to, page_size and page_number. Returns {items, page, page_size, has_more}; keep paging while has_more is true. It replaces the removed per-type results tools"
@@ -203,9 +208,9 @@
         "Long-running operations (3D models, animations) may take 60-120 seconds",
         "Generations run on a job queue. Over MCP every generation tool is asynchronous: it returns {id, status:'queued'} immediately and the result is collected with getApiJob (pass wait up to 60 seconds to long-poll). Non-terminal responses carry poll_after_ms. There is no async parameter on the MCP tools",
         "On the REST API the same queue works the same way: requests default to async and return 202 with a job id. Synchronous responses are deprecated there; passing async: false in the payload opts into them and stays supported indefinitely",
-        "Job tools are free: getApiJob (status/result, optional wait long-poll), listApiJobs (recent API/MCP jobs, filter by status, limit capped at 100), cancelApiJob (cancels a still-queued job and refunds its credits)",
+        "Job tools are free: getApiJob (status/result, optional wait long-poll), listApiJobs (recent API/MCP jobs, filter by status, limit capped at 100), cancelApiJob (cancels a still-queued job and refunds its credits). getAccount is free too: credit balance, plan and auto top-up, to check before an expensive generation",
         "listGenerations is the free, paginated generation history across both surfaces: filter by type, by source (api|web|all), by free-text search, by request_id or by date. It replaces the removed per-type results tools (getImageResults, getSpriteResults, getVideoResults, getAudioResults, get3DModelResults), which are deprecated in the REST API",
-        "Fair use: up to 50 generations queued or running per account (further submissions return 429 with code PENDING_JOBS_LIMIT), and 150 requests per 5 minutes per API key on the read endpoints (job status, job listing, generation history, documentation reads), 60 per 5 minutes and 1,000 per day on documentation search; a 429 carries Retry-After",
+        "Fair use: up to 50 generations queued or running per account (further submissions return 429 with code PENDING_JOBS_LIMIT), and 150 requests per 5 minutes per API key on the read endpoints (job status, job listing, generation history, account, documentation reads), 60 per 5 minutes and 1,000 per day on documentation search; a 429 carries Retry-After",
         "All generated asset URLs are temporary Google Cloud Storage links that expire after 7 days: download and save assets locally (or re-upload to permanent storage) before they expire, especially anything destined for production use; never store the returned URLs as permanent references"
       ]
     }

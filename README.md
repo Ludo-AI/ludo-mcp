@@ -12,6 +12,7 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 | **Video** | Generate short videos from images or reference images (5-15 seconds, with a soundtrack), prompt-driven video editing, 2x upscaling |
 | **Audio** | Sound effects, background music, character voices, TTS |
 | **Jobs & History** | Async job queue: submit, poll or long-poll, list and cancel jobs (queued jobs refund their credits), plus paginated generation history across the API and the web app |
+| **Account** | Credit balance, plan and auto top-up settings, to check before an expensive generation |
 | **Documentation** | Search or read Ludo's own feature guidance before generating: animation modes, model choice, margins, known limitations |
 
 ## Quick Start
@@ -66,8 +67,8 @@ Sprite animation, motion transfer, spritesheet editing and video generation take
 
 | Model | Used for | Notes |
 |-------|----------|-------|
-| `hydra` | Sprite animation (default), keyframes (default), motion transfer, spritesheet editing | Most capable model; its spritesheets come with a generated sound effect (`audio_b64`). 3 credits/s, shortest animation 3s (9 credits minimum) |
-| `forge` | Motion transfer (default), spritesheet editing (default), sprite animation, keyframes | Cost-effective; tuned for presets and matching poses. 1.5 credits/s on animation, 2 credits/s on transfer and editing, 4-credit minimum charge |
+| `hydra` | Sprite animation, keyframes, motion transfer and spritesheet editing (the default for all four) | Most capable all-around model; its spritesheets come with a generated sound effect (`audio_b64`). 3 credits/s, shortest animation 3s (9 credits minimum) |
+| `forge` | Sprite animation, keyframes, motion transfer, spritesheet editing | Cost-effective, for basic animations and simple sprites; on motion transfer it works best with presets and matching poses. Multiple tries might be needed. 1.5 credits/s on animation, 2 credits/s on transfer and editing, 4-credit minimum charge |
 | `forge-pixel` | Same actions as `forge` | Same pricing as `forge`; for low-res pixel-art sprites |
 | `griffin` | Video generation (default), video from references (default) | Fast cinematic 480p video with a soundtrack. 1.5 credits/s (2.5 credits/s from references), 5s minimum |
 | `griffin-hd` | Video editing (default), video generation, video from references | Same as Griffin in 720p. 2 credits/s (4 credits/s from references), 5s minimum. Its output is too large for `upscaleVideo` |
@@ -308,7 +309,7 @@ Create animated spritesheets from static images. Use this when you can describe 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `initial_image` | Yes | URL or base64 of the starting frame |
-| `motion_prompt` | Yes | Animation description (e.g., "walking cycle", "idle breathing", "attack slash") |
+| `motion_prompt` | Yes | Animation description (e.g., "walking", "idle breathing", "attack slash", "casting a fireball with both hands"). See [Writing the motion prompt](#writing-the-motion-prompt) |
 | `image_type` | No | `sprite` (default), `sprite-vfx`, `ui_asset` |
 | `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
 | `frame_size` | No | `0` (default, max resolution), `32`, `64`, `96`, `128`, `192`, `256`, `384`, `-1` (AI 1.5× upscale), `-9` (match input frame) |
@@ -319,7 +320,7 @@ Create animated spritesheets from static images. Use this when you can describe 
 | `margin_ratio` | No | *Deprecated* - uniform padding on both axes, equivalent to setting both per-axis params to the same value. Cannot be combined with the per-axis params (fails with 400) |
 | `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
 | `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
-| `model` | No | `hydra` (default; most capable, generates audio), `forge` (best for basic animations and relatively simple sprites), `forge-pixel` (low-res pixel art). Legacy, avoid for new work: `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
+| `model` | No | `hydra` (default; most capable all-around, generates audio), `forge` (only for basic animations and simple sprites; multiple tries might be needed), `forge-pixel` (low-res pixel art). Legacy, avoid for new work: `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
 | `duration` | No | Default `3`s. Hydra: `3`–`5`s in 0.5 steps; Forge / Forge Pixel: `1`–`5`s in 0.5 steps. A model that does not offer the requested default falls back to its shortest |
 | `final_image` | No | Ending frame for interpolation |
 | `gif` | No | Generate an animated GIF (default: false) |
@@ -332,6 +333,15 @@ Create animated spritesheets from static images. Use this when you can describe 
 **Credits:** rate × seconds, with a per-model floor - Hydra: 3/sec (shortest 3s, so 9 minimum; the default 3s = 9); Forge and Forge Pixel: 1.5/sec with a 4-credit minimum (3s = 4.5). Legacy: Blitz 1.9/sec, Eagle 2.6/sec, Eagle with Audio 3.1/sec, all with a 4-credit minimum.
 **Processing time:** 30-90 seconds
 
+#### Writing the motion prompt
+
+Applies to `animateSprite` and `animateSpriteKeyframes`.
+
+- Describe exactly and unambiguously what the character should do. Specific or complex actions are fine; there is no need to simplify them.
+- Don't over-describe: too much detail can harm the animation. Name an action the model already knows instead of breaking it into steps ("walking", never "move the left foot forward, then the right foot").
+- Don't restate what the image or keyframes already show (the character, its equipment, the art style, background, lighting, camera). Leave frame count and timing to `frames` and `duration`.
+- Negative phrasing ("no background", "do not move the camera", "without a weapon") works only on `hydra`. On `forge`, `forge-pixel` and the legacy models it backfires: naming something you don't want makes it more likely to appear. On those models state only what should happen.
+
 ---
 
 ### Keyframe Animation (`animateSpriteKeyframes`)
@@ -343,7 +353,7 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 | `initial_image` | No* | URL or base64 of the first keyframe. *At least one of `initial_image` or `middle_image` is required (a `final_image` alone is rejected) |
 | `middle_image` | No* | URL or base64 of the middle keyframe the animation passes through |
 | `final_image` | No | URL or base64 of the final keyframe |
-| `motion_prompt` | No | Optional animation description (e.g., "attack slash"); without it the keyframes drive the motion |
+| `motion_prompt` | No | Optional animation description (e.g., "attack slash"); without it the keyframes drive the motion. See [Writing the motion prompt](#writing-the-motion-prompt) |
 | `image_type` | No | `sprite` (default), `sprite-vfx`, `ui_asset` |
 | `model` | No | `hydra` (default; generates audio), `forge`, or `forge-pixel` for pixel-art sprites |
 | `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
@@ -403,13 +413,13 @@ Transfer motion from a video or animation preset onto a static sprite, producing
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
-| `model` | No | `forge` (default; cost-effective, works best with presets and matching poses), `forge-pixel` (pixel art), `hydra` (most capable, generates audio). Legacy, avoid for new work: `tango` |
-| `duration` | No | Animation length in seconds (default 1.5; on hydra, which starts at 3s, an omitted duration becomes 3). Forge / Forge Pixel: `1`–`5`s in 0.5 steps; Hydra: `3`–`5`s. A longer reference clip or preset is compressed to fit, so pass the preset's own `duration` to keep its timing |
+| `model` | No | `hydra` (default; most capable, generates audio), `forge` (cheaper; for simple motion, works best with presets and matching poses), `forge-pixel` (pixel art). Legacy, avoid for new work: `tango` |
+| `duration` | No | Animation length in seconds. Omitted, it is 1.5 where the model offers it and otherwise the model's shortest, so 3s on `hydra` (the default). Hydra: `3`–`5`s in 0.5 steps; Forge / Forge Pixel: `1`–`5`s. A longer reference clip or preset is compressed to fit, so pass the preset's own `duration` to keep its timing |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_b64` on hydra, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`)
 
-**Credits:** rate × seconds - Forge / Forge Pixel (default): 2/sec with a 4-credit minimum (the default 1.5s = 4, 3s = 6); Hydra: 3/sec (3s = 9). Legacy Tango: 4/sec. The produced length follows the reference clip, and you are never charged for more than you requested
+**Credits:** rate × seconds - Hydra (default): 3/sec (the default 3s = 9); Forge / Forge Pixel: 2/sec with a 4-credit minimum (1.5s = 4, 3s = 6). Legacy Tango: 4/sec. The produced length follows the reference clip, and you are never charged for more than you requested
 
 ---
 
@@ -424,7 +434,7 @@ Edit a spritesheet you previously generated: re-prompt its animation, outpaint b
 | `prompt` | No | Edit instruction. Required for `prompt` mode, optional for `outpaint`, not accepted for `fix_loop` |
 | `images` | No | Up to 5 reference images (URL or base64) to guide the edit |
 | `duration` | No | Output length in seconds (per model, as on `animateSprite`). Omit to keep the source spritesheet's duration, which is also what the flat `fix_loop` / `outpaint` rate is billed on |
-| `model` | No | `forge` (default), `forge-pixel`, `hydra`. Only used by `prompt` mode; `outpaint` and `fix_loop` run a fixed pipeline and ignore it |
+| `model` | No | `hydra` (default), `forge`, `forge-pixel`. Omit to keep the source spritesheet's model. Only used by `prompt` mode; `outpaint` and `fix_loop` run a fixed pipeline and ignore it |
 | `crop` | No | Crop frames to fit content. Omit to keep the source's setting |
 | `loop` | No | Trim animation for seamless loop (default: true) |
 | `frames` | No | Frames in the output spritesheet: `4`, `9`, `16`, `25`, `36`, `49`, `64`. Defaults to the source's frame count |
@@ -436,7 +446,7 @@ Edit a spritesheet you previously generated: re-prompt its animation, outpaint b
 
 **Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...). Audio is generated only by `prompt` edits on hydra; a fix on a hydra sheet comes back without `audio_b64`
 
-**Credits:** `fix_loop` and `outpaint`: flat 1 credit per second of output, no minimum, model ignored (a 3s sheet = 3). `prompt` edits: per model - Forge / Forge Pixel 2/sec with a 4-credit minimum (3s = 6), Hydra 3/sec (3s = 9)
+**Credits:** `fix_loop` and `outpaint`: flat 1 credit per second of output, no minimum, model ignored (a 3s sheet = 3). `prompt` edits: per model - Hydra 3/sec (3s = 9), Forge / Forge Pixel 2/sec with a 4-credit minimum (3s = 6)
 
 ---
 
@@ -699,6 +709,25 @@ List your generation history across both the API and the Ludo web studio, with f
 
 ---
 
+### Account (`getAccount`)
+
+Show your credit balance, plan and auto top-up settings. Check it before an expensive generation instead of waiting for a `402`. No parameters.
+
+**Returns:**
+- `credits`:
+  - `available`: what generations can spend right now (`plan_credits` + `extra` - `used`).
+  - `resets_at`: when the plan credits refill (unix seconds).
+  - `team_pool`: true when the balance is your team's shared pool.
+  - `paused`: true while the subscription is paused.
+  - `grace_until`: set when the subscription has ended; remaining credits stay spendable until then.
+- `plan`: `name` and `api_access`.
+- `auto_topup`: `enabled`, `threshold` and `credits`. It is null for team members, because the team owner manages it.
+- `billing_url`: where to buy credits or change the plan or auto top-up. Those changes happen in the web app, not through the API.
+
+**Credits:** Free
+
+---
+
 ## How Generation Calls Work
 
 Every generation runs on a job queue, and **over MCP every generation tool is asynchronous**. A generation call returns `{id, status: "queued"}` right away instead of blocking, so nothing is held open while a GPU runs and no MCP transport can time out mid-generation. You then collect the result with `getApiJob`. There is no `async` parameter on the MCP tools: it is not a knob you need to set.
@@ -726,7 +755,7 @@ Credits are held when a job is accepted. For duration-priced tools (sprites and 
 ## Fair Use Limits
 
 - **50 generations queued or running per account.** Submitting beyond that returns `429` with code `PENDING_JOBS_LIMIT`; wait for jobs to finish, then submit again.
-- **150 requests per 5 minutes** on the read endpoints (job status, job listing, generation history, feature documentation), per API key. A `429` carries `Retry-After`.
+- **150 requests per 5 minutes** on the read endpoints (job status, job listing, generation history, account, feature documentation), per API key. A `429` carries `Retry-After`.
 - **60 requests per 5 minutes, and 1,000 per day,** on documentation search (`searchDocs`), per API key.
 
 ## Finding Results Later
