@@ -14,6 +14,7 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 | **Jobs & History** | Async job queue: submit, poll or long-poll, list and cancel jobs (queued jobs refund their credits), plus paginated generation history across the API and the web app |
 | **Account** | Credit balance, plan and auto top-up settings, to check before an expensive generation |
 | **Documentation** | Search or read Ludo's own feature guidance before generating: animation modes, model choice, margins, known limitations |
+| **Feedback** | Report a limitation, bug or missing capability straight to the Ludo team |
 
 ## Quick Start
 
@@ -67,7 +68,7 @@ Sprite animation, motion transfer, spritesheet editing and video generation take
 
 | Model | Used for | Notes |
 |-------|----------|-------|
-| `hydra` | Sprite animation, keyframes, motion transfer and spritesheet editing (the default for all four) | Most capable all-around model; its spritesheets come with a generated sound effect (`audio_b64`). 3 credits/s, shortest animation 3s (9 credits minimum) |
+| `hydra` | Sprite animation, keyframes, motion transfer and spritesheet editing (the default for all four) | Most capable all-around model; its spritesheets come with a generated sound effect (`audio_url`, an mp3). 3 credits/s, shortest animation 3s (9 credits minimum) |
 | `forge` | Sprite animation, keyframes, motion transfer, spritesheet editing | Cost-effective, for basic animations and simple sprites; on motion transfer it works best with presets and matching poses. Multiple tries might be needed. 1.5 credits/s on animation, 2 credits/s on transfer and editing, 4-credit minimum charge |
 | `forge-pixel` | Same actions as `forge` | Same pricing as `forge`; for low-res pixel-art sprites |
 | `griffin` | Video generation (default), video from references (default) | Fast cinematic 480p video with a soundtrack. 1.5 credits/s (2.5 credits/s from references), 5s minimum |
@@ -328,7 +329,7 @@ Create animated spritesheets from static images. Use this when you can describe 
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** `spritesheet_url` (the sheet), `video_url` (an mp4 of the animation - pass it to `transferMotion` as `video` or to `createSpriteAudio` as `spritesheet_video_url`), `audio_b64` (hydra only: a generated sound effect, so there is no need to call `createSpriteAudio`), `num_frames`, `num_cols`, `num_rows`, and when requested `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`
+**Returns:** `spritesheet_url` (the sheet), `video_url` (an mp4 of the animation - pass it to `transferMotion` as `video` or to `createSpriteAudio` as `spritesheet_video_url`), `audio_url` (hydra only: URL of a generated sound effect (mp3), so there is no need to call `createSpriteAudio`), `num_frames`, `num_cols`, `num_rows`, `duration` (seconds, to play the sheet at its real speed), and when requested `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`
 
 **Credits:** rate × seconds, with a per-model floor - Hydra: 3/sec (shortest 3s, so 9 minimum; the default 3s = 9); Forge and Forge Pixel: 1.5/sec with a 4-credit minimum (3s = 4.5). Legacy: Blitz 1.9/sec, Eagle 2.6/sec, Eagle with Audio 3.1/sec, all with a 4-credit minimum.
 **Processing time:** 30-90 seconds
@@ -371,7 +372,7 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_b64` on hydra, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...)
+**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_url` on hydra, `gif_url`, `num_frames`, `num_cols`, `num_rows`, `duration`, ...)
 
 **Credits:** same as `animateSprite` - Hydra 3/sec (3s = 9); Forge / Forge Pixel 1.5/sec with a 4-credit minimum (1s–2.5s = 4, 3s = 4.5, 4s = 6)
 **Processing time:** 30-90 seconds
@@ -417,7 +418,7 @@ Transfer motion from a video or animation preset onto a static sprite, producing
 | `duration` | No | Animation length in seconds. Omitted, it is 1.5 where the model offers it and otherwise the model's shortest, so 3s on `hydra` (the default). Hydra: `3`–`5`s in 0.5 steps; Forge / Forge Pixel: `1`–`5`s. A longer reference clip or preset is compressed to fit, so pass the preset's own `duration` to keep its timing |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_b64` on hydra, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`)
+**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_url` on hydra, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`, `duration`)
 
 **Credits:** rate × seconds - Hydra (default): 3/sec (the default 3s = 9); Forge / Forge Pixel: 2/sec with a 4-credit minimum (1.5s = 4, 3s = 6). Legacy Tango: 4/sec. The produced length follows the reference clip, and you are never charged for more than you requested
 
@@ -444,7 +445,7 @@ Edit a spritesheet you previously generated: re-prompt its animation, outpaint b
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact (default: false) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...). Audio is generated only by `prompt` edits on hydra; a fix on a hydra sheet comes back without `audio_b64`
+**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...). Audio is generated only by `prompt` edits on hydra; a fix on a hydra sheet comes back without `audio_url`
 
 **Credits:** `fix_loop` and `outpaint`: flat 1 credit per second of output, no minimum, model ignored (a 3s sheet = 3). `prompt` edits: per model - Hydra 3/sec (3s = 9), Forge / Forge Pixel 2/sec with a 4-credit minimum (3s = 6)
 
@@ -452,7 +453,7 @@ Edit a spritesheet you previously generated: re-prompt its animation, outpaint b
 
 ### Spritesheet Sound Effect (`createSpriteAudio`)
 
-Generate a sound effect for a spritesheet animation you previously generated. Spritesheets made with `hydra` already come with `audio_b64`, so call this for `forge` / `forge-pixel` output, or to replace hydra's sound.
+Generate a sound effect for a spritesheet animation you previously generated. Spritesheets made with `hydra` already come with `audio_url`, so call this for `forge` / `forge-pixel` output, or to replace hydra's sound.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -460,7 +461,7 @@ Generate a sound effect for a spritesheet animation you previously generated. Sp
 | `prompt` | No | What the sound should be, e.g. "metallic sword swing with a whoosh" |
 | `request_id` | No | Client-provided ID to find the job again; must not be one you already used for another generation |
 
-**Returns:** `url` of the generated audio file. The audio is also attached to the spritesheet, so it shows up as `audio_b64` on that item in `listGenerations`
+**Returns:** `url` of the generated audio file. The audio is also attached to the spritesheet, so it shows up as `audio_url` on that item in `listGenerations`
 
 **Credits:** 3 per call
 
@@ -723,6 +724,22 @@ Show your credit balance, plan and auto top-up settings. Check it before an expe
 - `plan`: `name` and `api_access`.
 - `auto_topup`: `enabled`, `threshold` and `credits`. It is null for team members, because the team owner manages it.
 - `billing_url`: where to buy credits or change the plan or auto top-up. Those changes happen in the web app, not through the API.
+
+**Credits:** Free
+
+### Send Feedback (`submitApiFeedback`)
+
+Tell the Ludo team about a limitation you could not work around, a bug, a result that did not match the documentation, a capability you needed that Ludo does not offer yet, or something that worked well. Describe what you were trying to do and what was missing. Send one report per issue, leave out personal data, secrets and file contents, and if you are an agent, tell the user what you sent.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `category` | Yes | `limitation`, `bug`, `feature_request`, `praise` or `other` |
+| `message` | Yes | What you were trying to do, what happened, and what would have helped (up to 4,000 characters) |
+| `operation` | No | The tool the feedback is about, e.g. `animateSprite` |
+| `job_id` | No | The job it is about, when there is one |
+| `agent` | No | The agent or app sending it, e.g. `Claude Code` |
+
+**Returns:** `ok` and the report's `id`
 
 **Credits:** Free
 
