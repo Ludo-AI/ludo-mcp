@@ -729,11 +729,11 @@ Show your credit balance, plan and auto top-up settings. Check it before an expe
 
 ### Send Feedback (`submitApiFeedback`)
 
-Tell the Ludo team about a limitation you could not work around, a bug, a result that did not match the documentation, a capability you needed that Ludo does not offer yet, or something that worked well. Describe what you were trying to do and what was missing. Send one report per issue, leave out personal data, secrets and file contents, and if you are an agent, tell the user what you sent.
+Report a problem with the Ludo API itself to the Ludo team. Use it only for API bugs (an error, a failed or stuck job, a crash, a response that does not match the documentation) and API limitations (a parameter, operation or format you needed that the API does not support, and that you could not work around). Never use it to report model limitations or the quality of a result: an image, sprite, animation, 3D model, video or sound that looks wrong, ignores part of the prompt, has artifacts or is not what you wanted is not an API bug. Retry with a different prompt, model or settings instead. Describe what you were trying to do and what went wrong. Send one report per issue, leave out personal data, secrets and file contents, and if you are an agent, tell the user what you sent.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `category` | Yes | `limitation`, `bug`, `feature_request`, `praise` or `other` |
+| `category` | Yes | `bug`, `limitation`, `feature_request`, `praise` or `other`. Generated content that looks wrong is a model limitation, not a bug: do not report it |
 | `message` | Yes | What you were trying to do, what happened, and what would have helped (up to 4,000 characters) |
 | `operation` | No | The tool the feedback is about, e.g. `animateSprite` |
 | `job_id` | No | The job it is about, when there is one |
