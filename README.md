@@ -8,7 +8,7 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 |----------|-------------|
 | **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal |
 | **3D Models** | Convert 2D images to GLB models with PBR textures, auto-rig models (skeleton + skin weights, engine-ready joint naming), text-driven skeletal animation, retarget curated animation presets onto rigged models |
-| **Animation** | Animated spritesheets from static sprites (4-64 frames), keyframe animation through up to three fixed frames, motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing), sound effects for a spritesheet |
+| **Animation** | Animated spritesheets from static sprites (4-64 frames), keyframe animation through up to three fixed frames, motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing, finer-detail re-render), sound effects for a spritesheet |
 | **Video** | Generate short videos from images or reference images (5-15 seconds, with a soundtrack), prompt-driven video editing, 2x upscaling |
 | **Audio** | Sound effects, background music, character voices, TTS |
 | **Jobs & History** | Async job queue: submit, poll or long-poll, list and cancel jobs (queued jobs refund their credits), plus paginated generation history across the API and the web app |
@@ -69,7 +69,8 @@ Sprite animation, motion transfer, spritesheet editing and video generation take
 | Model | Used for | Notes |
 |-------|----------|-------|
 | `hydra` | Sprite animation, keyframes, motion transfer and spritesheet editing (the default for all four) | Most capable all-around model; its spritesheets come with a generated sound effect (`audio_url`, an mp3). 3 credits/s, shortest animation 3s (9 credits minimum) |
-| `forge` | Sprite animation, keyframes, motion transfer, spritesheet editing | Cost-effective, for basic animations and simple sprites; on motion transfer it works best with presets and matching poses. Multiple tries might be needed. 1.5 credits/s on animation, 2 credits/s on transfer and editing, 4-credit minimum charge |
+| `hydra-plus` | Sprite animation, keyframes, new view (`rotateSpritesheet`) | Hydra with better fine details; slower generations. Also returns `audio_url`. 4 credits/s, shortest animation 3s (12 credits minimum). A sheet already made on `hydra` can get the same extra pass with `editSpritesheet` `edit_mode` `improve` |
+| `forge` | Sprite animation, keyframes, motion transfer, spritesheet editing | Cost-effective, for basic animations and simple sprites; on motion transfer it works best with presets and matching poses. Multiple tries might be needed. 1.5 credits/s on animation, 2 credits/s on transfer and editing, no minimum charge |
 | `forge-pixel` | Same actions as `forge` | Same pricing as `forge`; for low-res pixel-art sprites |
 | `griffin` | Video generation (default), video from references (default) | Fast cinematic 480p video with a soundtrack. 1.5 credits/s (2.5 credits/s from references), 5s minimum |
 | `griffin-hd` | Video editing (default), video generation, video from references | Same as Griffin in 720p. 2 credits/s (4 credits/s from references), 5s minimum. Its output is too large for `upscaleVideo` |
@@ -321,17 +322,17 @@ Create animated spritesheets from static images. Use this when you can describe 
 | `margin_ratio` | No | *Deprecated* - uniform padding on both axes, equivalent to setting both per-axis params to the same value. Cannot be combined with the per-axis params (fails with 400) |
 | `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
 | `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
-| `model` | No | `hydra` (default; most capable all-around, generates audio), `forge` (only for basic animations and simple sprites; multiple tries might be needed), `forge-pixel` (low-res pixel art). Legacy, avoid for new work: `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
-| `duration` | No | Default `3`s. Hydra: `3`–`5`s in 0.5 steps; Forge / Forge Pixel: `1`–`5`s in 0.5 steps. A model that does not offer the requested default falls back to its shortest |
+| `model` | No | `hydra` (default; most capable all-around, generates audio), `hydra-plus` (hydra with better fine details, slower; also generates audio), `forge` (only for basic animations and simple sprites; multiple tries might be needed), `forge-pixel` (low-res pixel art). Legacy, avoid for new work: `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
+| `duration` | No | Default `3`s. Hydra / Hydra+: `3`–`5`s in 0.5 steps; Forge / Forge Pixel: `1`–`5`s in 0.5 steps. A model that does not offer the requested default falls back to its shortest |
 | `final_image` | No | Ending frame for interpolation |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** `spritesheet_url` (the sheet), `video_url` (an mp4 of the animation - pass it to `transferMotion` as `video` or to `createSpriteAudio` as `spritesheet_video_url`), `audio_url` (hydra only: URL of a generated sound effect (mp3), so there is no need to call `createSpriteAudio`), `num_frames`, `num_cols`, `num_rows`, `duration` (seconds, to play the sheet at its real speed), and when requested `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`
+**Returns:** `spritesheet_url` (the sheet), `video_url` (an mp4 of the animation - pass it to `transferMotion` as `video` or to `createSpriteAudio` as `spritesheet_video_url`), `audio_url` (hydra and hydra-plus only: URL of a generated sound effect (mp3), so there is no need to call `createSpriteAudio`), `num_frames`, `num_cols`, `num_rows`, `duration` (seconds, to play the sheet at its real speed), and when requested `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`
 
-**Credits:** rate × seconds, with a per-model floor - Hydra: 3/sec (shortest 3s, so 9 minimum; the default 3s = 9); Forge and Forge Pixel: 1.5/sec with a 4-credit minimum (3s = 4.5). Legacy: Blitz 1.9/sec, Eagle 2.6/sec, Eagle with Audio 3.1/sec, all with a 4-credit minimum.
+**Credits:** rate × seconds - Hydra: 3/sec (shortest 3s, so 9 minimum; the default 3s = 9); Hydra+: 4/sec (shortest 3s, so 12 minimum); Forge and Forge Pixel: 1.5/sec, no minimum (3s = 4.5). Legacy: Blitz 1.9/sec, Eagle 2.6/sec, Eagle with Audio 3.1/sec, all with a 4-credit minimum.
 **Processing time:** 30-90 seconds
 
 #### Writing the motion prompt
@@ -341,13 +342,13 @@ Applies to `animateSprite` and `animateSpriteKeyframes`.
 - Describe exactly and unambiguously what the character should do. Specific or complex actions are fine; there is no need to simplify them.
 - Don't over-describe: too much detail can harm the animation. Name an action the model already knows instead of breaking it into steps ("walking", never "move the left foot forward, then the right foot").
 - Don't restate what the image or keyframes already show (the character, its equipment, the art style, background, lighting, camera). Leave frame count and timing to `frames` and `duration`.
-- Negative phrasing ("no background", "do not move the camera", "without a weapon") works only on `hydra`. On `forge`, `forge-pixel` and the legacy models it backfires: naming something you don't want makes it more likely to appear. On those models state only what should happen.
+- Negative phrasing ("no background", "do not move the camera", "without a weapon") works only on `hydra` and `hydra-plus`. On `forge`, `forge-pixel` and the legacy models it backfires: naming something you don't want makes it more likely to appear. On those models state only what should happen.
 
 ---
 
 ### Keyframe Animation (`animateSpriteKeyframes`)
 
-Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_image`, `final_image`), producing a spritesheet that interpolates through the provided frames in order. Runs on `hydra` (default), `forge` or `forge-pixel` - the models that support a middle keyframe. The motion prompt is optional here: when omitted, the motion is derived purely from the keyframes. For just a start and end frame, `animateSprite` with `final_image` does the same job.
+Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_image`, `final_image`), producing a spritesheet that interpolates through the provided frames in order. Runs on `hydra` (default), `hydra-plus`, `forge` or `forge-pixel` - the models that support a middle keyframe. The motion prompt is optional here: when omitted, the motion is derived purely from the keyframes. For just a start and end frame, `animateSprite` with `final_image` does the same job.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -356,7 +357,7 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 | `final_image` | No | URL or base64 of the final keyframe |
 | `motion_prompt` | No | Optional animation description (e.g., "attack slash"); without it the keyframes drive the motion. See [Writing the motion prompt](#writing-the-motion-prompt) |
 | `image_type` | No | `sprite` (default), `sprite-vfx`, `ui_asset` |
-| `model` | No | `hydra` (default; generates audio), `forge`, or `forge-pixel` for pixel-art sprites |
+| `model` | No | `hydra` (default; generates audio), `hydra-plus` (hydra with better fine details; also generates audio), `forge`, or `forge-pixel` for pixel-art sprites |
 | `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
 | `frame_size` | No | `0` (default, max resolution), `32`, `64`, `96`, `128`, `192`, `256`, `384`, `-1` (AI 1.5× upscale), `-9` (match input frame) |
 | `loop` | No | Seamless loop (default: true) |
@@ -366,15 +367,15 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 | `margin_ratio` | No | *Deprecated* - uniform padding on both axes; cannot be combined with the per-axis params (fails with 400) |
 | `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
 | `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
-| `duration` | No | Default `3`s. Hydra: `3`–`5`s; Forge / Forge Pixel: `1`–`5`s in 0.5 steps. Three keyframes need the room: at 1s the opening transition is compressed away |
+| `duration` | No | Default `3`s. Hydra / Hydra+: `3`–`5`s; Forge / Forge Pixel: `1`–`5`s in 0.5 steps. Three keyframes need the room: at 1s the opening transition is compressed away |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_url` on hydra, `gif_url`, `num_frames`, `num_cols`, `num_rows`, `duration`, ...)
+**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_url` on hydra and hydra-plus, `gif_url`, `num_frames`, `num_cols`, `num_rows`, `duration`, ...)
 
-**Credits:** same as `animateSprite` - Hydra 3/sec (3s = 9); Forge / Forge Pixel 1.5/sec with a 4-credit minimum (1s–2.5s = 4, 3s = 4.5, 4s = 6)
+**Credits:** same as `animateSprite` - Hydra 3/sec (3s = 9); Hydra+ 4/sec (3s = 12); Forge / Forge Pixel 1.5/sec, no minimum (1s = 1.5, 3s = 4.5, 4s = 6)
 **Processing time:** 30-90 seconds
 
 ---
@@ -420,22 +421,22 @@ Transfer motion from a video or animation preset onto a static sprite, producing
 
 **Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_url` on hydra, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`, `duration`)
 
-**Credits:** rate × seconds - Hydra (default): 3/sec (the default 3s = 9); Forge / Forge Pixel: 2/sec with a 4-credit minimum (1.5s = 4, 3s = 6). Legacy Tango: 4/sec. The produced length follows the reference clip, and you are never charged for more than you requested
+**Credits:** rate × seconds - Hydra (default): 3/sec (the default 3s = 9); Forge / Forge Pixel: 2/sec, no minimum (1.5s = 3, 3s = 6). Legacy Tango: 4/sec with a 4-credit minimum. The produced length follows the reference clip, and you are never charged for more than you requested
 
 ---
 
 ### Edit Spritesheet (`editSpritesheet`)
 
-Edit a spritesheet you previously generated: re-prompt its animation, outpaint beyond the frame (zoom out), or repair a bad loop. Pass back the `spritesheet_url` you received from `animateSprite`, `animateSpriteKeyframes`, `transferMotion`, or an earlier edit; it must be a spritesheet you generated in the last 7 days (external URLs are not accepted). Omit `duration`, `frames`, `frame_size`, `crop` and `model` to keep the source spritesheet's values.
+Edit a spritesheet you previously generated: re-prompt its animation, outpaint beyond the frame (zoom out), repair a bad loop, or re-render a `hydra` sheet with finer detail (improve). Pass back the `spritesheet_url` you received from `animateSprite`, `animateSpriteKeyframes`, `transferMotion`, or an earlier edit; it must be a spritesheet you generated in the last 7 days (external URLs are not accepted). Omit `duration`, `frames`, `frame_size`, `crop` and `model` to keep the source spritesheet's values.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `spritesheet_url` | Yes | URL of a spritesheet you generated in the last 7 days |
-| `edit_mode` | No | `prompt` (default), re-prompt the animation; `outpaint`, extend beyond the frame; `fix_loop`, repair a bad loop |
-| `prompt` | No | Edit instruction. Required for `prompt` mode, optional for `outpaint`, not accepted for `fix_loop` |
+| `edit_mode` | No | `prompt` (default), re-prompt the animation; `outpaint`, extend beyond the frame; `fix_loop`, repair a bad loop; `improve`, re-render with finer detail (the extra pass `hydra-plus` runs when it generates). `improve` takes only a spritesheet generated with `hydra`: any other source returns 400, including an already improved sheet or a loop fix or outpaint of one |
+| `prompt` | No | Edit instruction. Required for `prompt` mode, optional for `outpaint`, not accepted for `fix_loop` or `improve` |
 | `images` | No | Up to 5 reference images (URL or base64) to guide the edit |
-| `duration` | No | Output length in seconds (per model, as on `animateSprite`). Omit to keep the source spritesheet's duration, which is also what the flat `fix_loop` / `outpaint` rate is billed on |
-| `model` | No | `hydra` (default), `forge`, `forge-pixel`. Omit to keep the source spritesheet's model. Only used by `prompt` mode; `outpaint` and `fix_loop` run a fixed pipeline and ignore it |
+| `duration` | No | Output length in seconds (per model, as on `animateSprite`). Omit to keep the source spritesheet's duration. It does not change the price of `fix_loop`, `outpaint` or `improve`, which bill the source spritesheet's video length |
+| `model` | No | `hydra` (default), `forge`, `forge-pixel`. Omit to keep the source spritesheet's model. Only used by `prompt` mode; `outpaint`, `fix_loop` and `improve` run a fixed pipeline and ignore it |
 | `crop` | No | Crop frames to fit content. Omit to keep the source's setting |
 | `loop` | No | Trim animation for seamless loop (default: true) |
 | `frames` | No | Frames in the output spritesheet: `4`, `9`, `16`, `25`, `36`, `49`, `64`. Defaults to the source's frame count |
@@ -445,9 +446,9 @@ Edit a spritesheet you previously generated: re-prompt its animation, outpaint b
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact (default: false) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...). Audio is generated only by `prompt` edits on hydra; a fix on a hydra sheet comes back without `audio_url`
+**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...). New audio is generated only by `prompt` edits on hydra; `fix_loop`, `outpaint` and `improve` keep the source spritesheet's `audio_url` when it had one
 
-**Credits:** `fix_loop` and `outpaint`: flat 1 credit per second of output, no minimum, model ignored (a 3s sheet = 3). `prompt` edits: per model - Hydra 3/sec (3s = 9), Forge / Forge Pixel 2/sec with a 4-credit minimum (3s = 6)
+**Credits:** `fix_loop`, `outpaint` and `improve`: flat 1 credit per second of output, held for and capped at the source spritesheet's video length, no minimum, model ignored (a 3s sheet = 3, whatever `duration` you pass). `prompt` edits: per model - Hydra 3/sec (3s = 9), Forge / Forge Pixel 2/sec, no minimum (3s = 6)
 
 ---
 
