@@ -7,7 +7,8 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 | Category | Capabilities |
 |----------|-------------|
 | **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal |
-| **3D Models** | Convert 2D images to GLB models with PBR textures, auto-rig models (skeleton + skin weights, engine-ready joint naming), text-driven skeletal animation, retarget curated animation presets onto rigged models |
+| **3D Models** | Convert 2D images to GLB models with PBR textures (prop or the more detailed hero model, rigged in the same call if you like), auto-rig models (skeleton + skin weights, engine-ready joint naming), text-driven skeletal animation, retarget curated animation presets onto rigged models |
+| **Directional Sprites** | Render a 3D model as styled sprites from up to 8 directions that line up, in looks from pixel art to painted to 3D render, animated with a preset or your own clip, previewed for free before you render |
 | **Animation** | Animated spritesheets from static sprites (4-64 frames), keyframe animation through up to three fixed frames, motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing, finer-detail re-render), sound effects for a spritesheet |
 | **Video** | Generate short videos from images or reference images (5-15 seconds, with a soundtrack), prompt-driven video editing, 2x upscaling |
 | **Audio** | Sound effects, background music, character voices, TTS |
@@ -229,20 +230,25 @@ Remove the background from a single image, returning the subject isolated on a t
 
 ### 3D Model Generation (`create3DModel`)
 
-Convert a 2D image to a 3D GLB model with textures.
+Convert a 2D image to a 3D GLB model with textures, optionally rigged in the same call.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `image` | Yes | URL or base64-encoded image |
+| `image` | Yes | URL or base64-encoded image, taken as the front view |
+| `model` | No | `prop` (default): low-cost, for everyday props and environment pieces. `hero`: far more detailed and accurate, for close-up assets, but slower and more expensive |
+| `back_image` | No | `prop` only: the same subject seen from behind (URL or base64), so the back of the model follows it instead of being invented. `hero` rejects it |
 | `texture_type` | No | `pbr` (default), `simple`, `none` |
 | `texture_size` | No | `1024`, `2048` (default) |
 | `target_num_faces` | No | Triangle count 1,000-200,000 (default: 50,000) |
+| `rig` | No | Also rig the model (skeleton + skin weights) in the same call, as `rigModel` would (default: false) |
+| `rig_type` | No | With `rig`: the skeleton, as in `rigModel` (default here: `humanoid_template`, the one animation presets and Directional Sprites' `preset_id` need; use `general` for creatures and objects) |
+| `joint_naming` | No | With `rig`: the bone naming convention, as in `rigModel` (default: `smpl`) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** `model_url` (GLB file) + 4 snapshot images from different angles
+**Returns:** `model_url` (GLB file), snapshot images from different angles, and `rigged`
 
-**Credits:** 3 per model
-**Processing time:** 60-120 seconds
+**Credits:** 4 per model with `prop`, 15 with `hero`; `rig` adds 1, charged only when the model comes back rigged
+**Processing time:** 60-120 seconds with `prop`; `hero` is slower
 
 ---
 
@@ -287,12 +293,12 @@ Generate text-driven skeletal animations for an **already-rigged** 3D model (rig
 
 ### Animate 3D Model from Preset (`animate3DModelPreset`)
 
-Apply a curated animation preset to an **already-rigged** 3D model (retargeting). Unlike `animate3DModel`, the motion comes from a professionally curated clip library instead of a text prompt, so exactly **one** clip is returned. The model must have a humanoid-template rig: rig it with `rig_type` `humanoid_template` or `humanoid_template_hands` first. Only presets that expose a `clip_url` in `listAnimationPresets` can be applied.
+Apply a curated animation preset to an **already-rigged** 3D model (retargeting). Unlike `animate3DModel`, the motion comes from a professionally curated clip library instead of a text prompt, so exactly **one** clip is returned. The model must have a humanoid-template rig: rig it with `rig_type` `humanoid_template` or `humanoid_template_hands` first. Any preset id from `listAnimationPresets` works.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `model` | Yes | URL or base64-encoded **rigged** GLB (humanoid-template rig) |
-| `preset_id` | Yes | id of a preset from `listAnimationPresets`; only presets with a `clip_url` qualify |
+| `preset_id` | Yes | id of a preset from `listAnimationPresets` |
 | `crop_loop` | No | Trim the animation to the span that loops seamlessly. Omit for Auto: cyclic motions (walk, idle) loop, one-shots (jump, cast) keep their full arc |
 | `in_place` | No | Remove the animation's net travel so the character moves on the spot, the treadmill clip a game engine expects, with the engine driving locomotion. Omit to follow `crop_loop` |
 | `request_id` | No | Optional client-provided identifier for this request |
@@ -301,6 +307,60 @@ Apply a curated animation preset to an **already-rigged** 3D model (retargeting)
 
 **Credits:** 0.2 per retarget
 **Processing time:** 30-90 seconds
+
+---
+
+### Directional Sprites
+
+Render a 3D model as styled sprites seen from up to 8 directions (where the camera stands around a character facing S). Every direction asked for in one call is rendered together, on the same frame size, scale and floor, so the sprites line up. The usual flow:
+
+1. A rigged model: `create3DModel` with `rig: true` (or `rigModel`). Animation presets need a `humanoid_template` or `humanoid_template_hands` rig.
+2. `listDirectionalSpriteStyles`: pick a look.
+3. `previewDirectionalSprites`: check it, free.
+4. `createDirectionalSprites` for animated spritesheets, or `createDirectionalStills` for still images.
+
+#### `listDirectionalSpriteStyles`
+
+Free. Returns `styles` (each with `id`, `label`, `description`, `family`, `pixel`, `thumbnail_url`, `version` and its `settings` / `advanced_settings`: a `name`, `kind` of `choice`, `bool` or `color`, `options` and `default`), plus the `perspectives` and `directions` to choose from.
+
+#### `previewDirectionalSprites`
+
+A few frames of the model in a style, from each direction asked for, to check a look before rendering. Synchronous (not a job) and free; nothing is saved to your generations. Returns `previews`, one per direction: `frame_urls` (transparent images: 4 frames when animated, 1 for a still model), `width`, `height`, `num_frames`, `fps` and `render_3d` (the style and settings as rendered). An account runs one preview at a time: starting another cancels the one still running, which then answers with no body (HTTP 204). Takes the model, animation, camera and style parameters below, and `target_frame_size` (32-384, default 256).
+
+#### `createDirectionalSprites`
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `model` | Yes | URL or base64-encoded GLB (rigged, to animate it) |
+| `animation_url` | No | An animation made for this model: the `glb_url` from `animate3DModel` or `animate3DModelPreset` (URL or base64) |
+| `preset_id` | No | A preset from `listAnimationPresets`, retargeted onto the model (needs a humanoid-template rig) |
+| `crop_loop` | No | With `preset_id`: trim the preset to the span that loops seamlessly |
+| `model_animation` | No | The name of an animation the GLB itself carries |
+| `perspective` | No | `horizon`, `low`, `isometric` (default), `high`, `top` |
+| `directions` | No | Up to 8 of `S`, `SW`, `W`, `NW`, `N`, `NE`, `E`, `SE` (default: `["SW"]`) |
+| `style_id` | No | A style from `listDirectionalSpriteStyles` (default: `render_3d`) |
+| `style_params` | No | The style's settings to change, by name |
+| `style_version` | No | Pin a style version, e.g. the one a previous `render_3d` reports |
+| `target_frame_size` | No | Sprite size in pixels, 32-640 (default: 640) |
+| `num_frames` | No | Frames per sheet, 4-100 (default: 36) |
+| `loop` | No | Sample the animation as a seamless loop; omit to follow the animation |
+| `keep_horizontal_travel` / `keep_vertical_travel` | No | Keep the animation's ground travel (default: off) / its vertical motion (default: on) |
+| `gif` / `individual_frames` | No | Also return each sheet as a GIF / its frames as separate images |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+At most one of `animation_url`, `preset_id` and `model_animation`; with none, each sheet is a single frame.
+
+**Returns:** `sheets`, one per direction in the order asked, each with `direction`, `spritesheet_url`, `video_url`, `num_frames`, `num_cols`, `num_rows`, `fps`, `render_3d`, and `gif_url` / `individual_frame_urls` when asked
+
+**Credits:** 1 per direction
+
+#### `createDirectionalStills`
+
+The model as it is, one large transparent sprite image per direction, ready for `animateSprite` or `editImage`. Takes `model`, `perspective`, `directions`, `style_id`, `style_params`, `style_version` and `request_id` as above.
+
+**Returns:** `images`, one per direction, each with `direction`, `url`, `width`, `height` and `render_3d`
+
+**Credits:** 0.5 per direction
 
 ---
 
@@ -385,7 +445,7 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 List available animation presets, used by `transferMotion` (onto a sprite) and `animate3DModelPreset` (onto a rigged 3D model). Returns preset animations, perspectives, and directions; no video URLs are exposed.
 
 **Returns:**
-- `animations`: Array of presets with `id`, `name`, `category`, `description`, `duration`, `preview_url`, and `clip_url` on the presets that can be retargeted onto a rigged 3D model
+- `animations`: Array of presets with `id`, `name`, `category`, `description`, `duration` and `preview_url`; any of them can be retargeted onto a rigged 3D model (`animate3DModelPreset`) or used as a Directional Sprites `preset_id`
 - `perspectives`: Array with `id`, `name`, `description` (all animations support all perspectives)
 - `directions`: `["N", "NE", "E", "SE", "S", "SW", "W", "NW"]` (all animations support all directions)
 

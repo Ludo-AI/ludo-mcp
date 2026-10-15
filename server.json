@@ -7,7 +7,7 @@
     "url": "https://github.com/Ludo-AI/ludo-mcp",
     "source": "github"
   },
-  "version": "0.15.0",
+  "version": "0.16.0",
   "websiteUrl": "https://ludo.ai",
   "remotes": [
     {
@@ -44,6 +44,11 @@
           "note": "create3DModel, then rigModel, then animate3DModel with prompt='walking'"
         },
         {
+          "name": "3D Model to Directional Sprites",
+          "description": "Styled sprites from up to 8 directions that line up",
+          "note": "create3DModel with rig=true, previewDirectionalSprites (free), then createDirectionalSprites with preset_id='walk_relaxed', directions=['S','SW','W']"
+        },
+        {
           "name": "Generate a Sound Effect",
           "description": "Game sound from a description",
           "note": "createSoundEffect with description='futuristic laser gun firing'"
@@ -75,6 +80,7 @@
         "skeletal-animation",
         "animation",
         "spritesheet",
+        "directional-sprites",
         "sound-effects",
         "sfx",
         "music",
@@ -90,7 +96,7 @@
       "license": "Proprietary",
       "publisher": "Ludo AI",
       "notes": [
-        "Credit-based: images 0.5, 3D models 3, rigging 1, 3D animation 0.2, sprite animation and video priced per second by model, audio 1-3. Each tool states its price",
+        "Credit-based: images 0.5, 3D models 4 (hero 15), rigging 1, 3D animation 0.2, directional sprites 1 per direction, sprite animation and video priced per second by model, audio 1-3. Each tool states its price",
         "Every generation tool is asynchronous: it returns {id, status:'queued'}; collect the result with getApiJob (wait up to 60s to long-poll)",
         "Up to 50 generations queued or running per account; read endpoints 150 requests per 5 minutes per API key",
         "Generated asset URLs expire after 7 days: download anything you want to keep"
