@@ -6,7 +6,7 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 
 | Category | Capabilities |
 |----------|-------------|
-| **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal |
+| **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal, upscaling |
 | **3D Models** | Convert 2D images to GLB models with PBR textures (prop or the more detailed hero model, rigged in the same call if you like), auto-rig models (skeleton + skin weights, engine-ready joint naming), text-driven skeletal animation, retarget curated animation presets onto rigged models |
 | **Directional Sprites** | Render a 3D model as styled sprites from up to 8 directions that line up, in looks from pixel art to painted to 3D render, animated with a preset or your own clip, previewed for free before you render |
 | **Animation** | Animated spritesheets from static sprites (4-64 frames), keyframe animation through up to three fixed frames, motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing, finer-detail re-render), sound effects for a spritesheet |
@@ -223,6 +223,21 @@ Remove the background from a single image, returning the subject isolated on a t
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** a single result with `url` (transparent PNG)
+
+**Credits:** 0.5 per image
+
+---
+
+### Upscale Image (`upscaleImage`)
+
+The same image at a higher resolution, up to 4x, with the result capped at 2048px on its longest side. The source must be below 2048px on its longest side; a larger one is rejected with HTTP 400 before anything is charged.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `image` | Yes | URL or base64-encoded image, below 2048px on its longest side |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+**Returns:** a single result with `url`
 
 **Credits:** 0.5 per image
 
