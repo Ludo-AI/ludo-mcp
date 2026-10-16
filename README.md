@@ -255,8 +255,7 @@ Convert a 2D image to a 3D GLB model with textures, optionally rigged in the sam
 | `texture_type` | No | `pbr` (default), `simple`, `none` |
 | `texture_size` | No | `1024`, `2048` (default) |
 | `target_num_faces` | No | Triangle count 1,000-200,000 (default: 50,000) |
-| `rig` | No | Also rig the model (skeleton + skin weights) in the same call, as `rigModel` would (default: false) |
-| `rig_type` | No | With `rig`: the skeleton, as in `rigModel` (default here: `humanoid_template`, for two-armed, two-legged characters; use `general` for creatures and objects. Animation presets and Directional Sprites' `preset_id` retarget onto any rig type, though not onto every model) |
+| `rig` | No | Also rig the model (skeleton + skin weights) in the same call (default: false). It gets the general rig, which suits any shape; there is no rig type to pick here (`rigModel` offers the others). Animation presets and Directional Sprites' `preset_id` retarget onto it, though not onto every model |
 | `joint_naming` | No | With `rig`: the bone naming convention, as in `rigModel` (default: `smpl`) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
@@ -902,7 +901,7 @@ Create an idle breathing animation for this character sprite
 ```
 
 ```
-Rig this 3D character with a humanoid template using Mixamo joint names, then apply a walk animation preset to it
+Rig this 3D character using Mixamo joint names, then apply a walk animation preset to it
 ```
 
 ```
