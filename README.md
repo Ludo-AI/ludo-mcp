@@ -256,7 +256,7 @@ Convert a 2D image to a 3D GLB model with textures, optionally rigged in the sam
 | `texture_size` | No | `1024`, `2048` (default) |
 | `target_num_faces` | No | Triangle count 1,000-200,000 (default: 50,000) |
 | `rig` | No | Also rig the model (skeleton + skin weights) in the same call, as `rigModel` would (default: false) |
-| `rig_type` | No | With `rig`: the skeleton, as in `rigModel` (default here: `humanoid_template`, the one animation presets and Directional Sprites' `preset_id` need; use `general` for creatures and objects) |
+| `rig_type` | No | With `rig`: the skeleton, as in `rigModel` (default here: `humanoid_template`, for two-armed, two-legged characters; use `general` for creatures and objects. Animation presets and Directional Sprites' `preset_id` retarget onto any rig type, though not onto every model) |
 | `joint_naming` | No | With `rig`: the bone naming convention, as in `rigModel` (default: `smpl`) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
@@ -274,7 +274,7 @@ Generate a skeleton and skin weights for an existing 3D model so it can be anima
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `model` | Yes | URL or base64-encoded GLB to rig |
-| `rig_type` | No | Skeleton style prior: `general` (default, works for any asset), `humanoid` (anime-style characters, densest skeleton), `game` (classic game-character rig), or the pinned humanoid templates with named joints (**required for `animate3DModelPreset`**): `humanoid_template` (22 joints) and `humanoid_template_hands` (52 joints, five fingers per hand). The templates only suit two-armed, two-legged characters |
+| `rig_type` | No | Skeleton style prior: `general` (default, works for any asset), `humanoid` (anime-style characters, densest skeleton), `game` (classic game-character rig), or the pinned humanoid templates with named joints: `humanoid_template` (22 joints) and `humanoid_template_hands` (52 joints, five fingers per hand). The templates only suit two-armed, two-legged characters. Animation presets (`animate3DModelPreset`) retarget onto any rig type, though not onto every model |
 | `joint_naming` | No | Bone naming convention for the identified joints: `smpl` (default), `mixamo` (Unity's humanoid auto-mapper), `humanik` (unprefixed names for Maya/MotionBuilder/FBX), `unreal` (UE mannequin), `godot` (SkeletonProfileHumanoid), `rigify` (Blender) or `vroid` (VRM). Purely a relabel, the skeleton is identical |
 | `request_id` | No | Optional client-provided identifier for this request |
 
@@ -308,11 +308,11 @@ Generate text-driven skeletal animations for an **already-rigged** 3D model (rig
 
 ### Animate 3D Model from Preset (`animate3DModelPreset`)
 
-Apply a curated animation preset to an **already-rigged** 3D model (retargeting). Unlike `animate3DModel`, the motion comes from a professionally curated clip library instead of a text prompt, so exactly **one** clip is returned. The model must have a humanoid-template rig: rig it with `rig_type` `humanoid_template` or `humanoid_template_hands` first. Any preset id from `listAnimationPresets` works.
+Apply a curated animation preset to an **already-rigged** 3D model (retargeting). Unlike `animate3DModel`, the motion comes from a professionally curated clip library instead of a text prompt, so exactly **one** clip is returned. Any rig type can take a preset (rig the model first with `rigModel`, or `create3DModel` with `rig: true`), though retargeting does not succeed on every model; when it does not, the job returns an error. Any preset id from `listAnimationPresets` works.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `model` | Yes | URL or base64-encoded **rigged** GLB (humanoid-template rig) |
+| `model` | Yes | URL or base64-encoded **rigged** GLB (any rig type) |
 | `preset_id` | Yes | id of a preset from `listAnimationPresets` |
 | `crop_loop` | No | Trim the animation to the span that loops seamlessly. Omit for Auto: cyclic motions (walk, idle) loop, one-shots (jump, cast) keep their full arc |
 | `in_place` | No | Remove the animation's net travel so the character moves on the spot, the treadmill clip a game engine expects, with the engine driving locomotion. Omit to follow `crop_loop` |
@@ -329,7 +329,7 @@ Apply a curated animation preset to an **already-rigged** 3D model (retargeting)
 
 Render a 3D model as styled sprites seen from up to 8 directions (where the camera stands around a character facing S). Every direction asked for in one call is rendered together, on the same frame size, scale and floor, so the sprites line up. The usual flow:
 
-1. A rigged model: `create3DModel` with `rig: true` (or `rigModel`). Animation presets need a `humanoid_template` or `humanoid_template_hands` rig.
+1. A rigged model: `create3DModel` with `rig: true` (or `rigModel`). Any rig type can take an animation preset, though retargeting does not succeed on every model.
 2. `listDirectionalSpriteStyles`: pick a look.
 3. `previewDirectionalSprites`: check it, free.
 4. `createDirectionalSprites` for animated spritesheets, or `createDirectionalStills` for still images.
@@ -348,7 +348,7 @@ A few frames of the model in a style, from each direction asked for, to check a 
 |-----------|----------|-------------|
 | `model` | Yes | URL or base64-encoded GLB (rigged, to animate it) |
 | `animation_url` | No | An animation made for this model: the `glb_url` from `animate3DModel` or `animate3DModelPreset` (URL or base64) |
-| `preset_id` | No | A preset from `listAnimationPresets`, retargeted onto the model (needs a humanoid-template rig) |
+| `preset_id` | No | A preset from `listAnimationPresets`, retargeted onto the model (any rig type can take one, though retargeting does not succeed on every model, and when it does not the call returns an error) |
 | `crop_loop` | No | With `preset_id`: trim the preset to the span that loops seamlessly |
 | `model_animation` | No | The name of an animation the GLB itself carries |
 | `perspective` | No | `horizon`, `low`, `isometric` (default), `high`, `top` |
