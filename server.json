@@ -7,7 +7,7 @@
     "url": "https://github.com/Ludo-AI/ludo-mcp",
     "source": "github"
   },
-  "version": "0.16.1",
+  "version": "0.16.2",
   "websiteUrl": "https://ludo.ai",
   "remotes": [
     {
@@ -96,7 +96,7 @@
       "license": "Proprietary",
       "publisher": "Ludo AI",
       "notes": [
-        "Credit-based: images 0.5, 3D models 4 (hero 15), rigging 1, 3D animation 0.2, directional sprites 1 per direction, sprite animation and video priced per second by model, audio 1-3. Each tool states its price",
+        "Credit-based: images 0.5, 3D models 4 (hero 15), rigging 1, 3D animation 0.5, directional sprites 1 per direction, sprite animation and video priced per second by model, audio 1-3. Each tool states its price",
         "Every generation tool is asynchronous: it returns {id, status:'queued'}; collect the result with getApiJob (wait up to 60s to long-poll)",
         "Up to 50 generations queued or running per account; read endpoints 150 requests per 5 minutes per API key",
         "Generated asset URLs expire after 7 days: download anything you want to keep"

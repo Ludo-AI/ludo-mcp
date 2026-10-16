@@ -300,7 +300,7 @@ Generate text-driven skeletal animations for an **already-rigged** 3D model (rig
 
 **Returns:** `animations`, an array of candidates, each with `clip_name`, `glb_url` (animation-only GLB), `preview_url` (mp4), `mode`, `seed`, `motion`, `fit_rmse`
 
-**Credits:** 0.2 per generation (one charge returns all variants; promotional price)
+**Credits:** 0.5 per generation (one charge returns all variants; promotional price)
 **Processing time:** 60-120 seconds
 
 ---
@@ -319,7 +319,7 @@ Apply a curated animation preset to an **already-rigged** 3D model (retargeting)
 
 **Returns:** `animations`, the same envelope as `animate3DModel`, containing one clip with `clip_name`, `preset_id`, `glb_url` (animation-only GLB, joints named as on your model), `preview_url` (mp4), `seed`, `motion`, `fit_rmse`
 
-**Credits:** 0.2 per retarget
+**Credits:** 0.5 per retarget
 **Processing time:** 30-90 seconds
 
 ---
