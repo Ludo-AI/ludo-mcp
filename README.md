@@ -7,7 +7,7 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 | Category | Capabilities |
 |----------|-------------|
 | **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal, upscaling |
-| **3D Models** | Convert 2D images to GLB models with PBR textures (prop or the more detailed hero model, rigged in the same call if you like), auto-rig models (skeleton + skin weights, engine-ready joint naming), text-driven skeletal animation, retarget curated animation presets onto rigged models |
+| **3D Models** | Character images ready for a 3D model (from a prompt, or your own image redrawn as a 3D render), convert 2D images to GLB models with PBR textures (prop or the more detailed hero model, rigged in the same call if you like), auto-rig models (skeleton + skin weights, engine-ready joint naming), text-driven skeletal animation, retarget curated animation presets onto rigged models |
 | **Directional Sprites** | Render a 3D model as styled sprites from up to 8 directions that line up, in looks from pixel art to painted to 3D render, animated with a preset or your own clip, previewed for free before you render |
 | **Animation** | Animated spritesheets from static sprites (4-64 frames), keyframe animation through up to three fixed frames, motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing, finer-detail re-render), sound effects for a spritesheet |
 | **Video** | Generate short videos from images or reference images (5-15 seconds, with a soundtrack), prompt-driven video editing, 2x upscaling |
@@ -266,6 +266,22 @@ Convert a 2D image to a 3D GLB model with textures, optionally rigged in the sam
 
 ---
 
+### Image for a 3D Model (`create3DModelImage`)
+
+A character image ready for `create3DModel`, the first step of Directional Sprites on the web. `create3DModel` converts the image it is given as it is; this makes one for it first. Pass a prompt, your own image, or both: an image is redrawn as a 3D render, and the prompt then says what to change. A redraw is a new picture each time, so call again for another try.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `prompt` | One of the two | Without an image: a description of the character (e.g. "a knight in green armour, full body, standing"). With an image: the changes to make (e.g. "add a red cape and a sword"), optional. Up to 1,000 characters |
+| `image` | One of the two | URL or base64-encoded image of your own, redrawn as a 3D render |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+**Returns:** a single result with `url`, to pass as `create3DModel`'s `image`
+
+**Credits:** 0.5 per image
+
+---
+
 ### Rig 3D Model (`rigModel`)
 
 Generate a skeleton and skin weights for an existing 3D model so it can be animated. Non-destructive to the geometry: it returns a new rigged GLB. Rig a model **before** using `animate3DModel`.
@@ -328,10 +344,12 @@ Apply a curated animation preset to an **already-rigged** 3D model (retargeting)
 
 Render a 3D model as styled sprites seen from up to 8 directions (where the camera stands around a character facing S). Every direction asked for in one call is rendered together, on the same frame size, scale and floor, so the sprites line up. The usual flow:
 
-1. A rigged model: `create3DModel` with `rig: true` (or `rigModel`). Any rig type can take an animation preset, though retargeting does not succeed on every model.
-2. `listDirectionalSpriteStyles`: pick a look.
-3. `previewDirectionalSprites`: check it, free.
-4. `createDirectionalSprites` for animated spritesheets, or `createDirectionalStills` for still images.
+1. *(Optional)* A character image: `create3DModelImage` from a prompt, or your own image redrawn as a 3D render.
+2. A rigged model: `create3DModel` with that image and `rig: true` (or `rigModel` for a model you already have). Any rig type can take an animation preset, though retargeting does not succeed on every model.
+3. *(Optional)* An animation, at most one: a `preset_id` from `listAnimationPresets`, or an `animation_url` made for this model by `animate3DModelPreset` or `animate3DModel`. With none, the sprites are a still pose.
+4. `listDirectionalSpriteStyles`: pick a look.
+5. `previewDirectionalSprites`: check it, free.
+6. `createDirectionalSprites` for animated spritesheets, or `createDirectionalStills` for still images.
 
 #### `listDirectionalSpriteStyles`
 
