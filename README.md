@@ -73,8 +73,9 @@ Sprite animation, motion transfer, spritesheet editing and video generation take
 | `hydra-plus` | Sprite animation, keyframes, new view (`rotateSpritesheet`) | Hydra with better fine details; slower generations. Also returns `audio_url`. 4 credits/s, shortest animation 3s (12 credits minimum). A sheet already made on `hydra` can get the same extra pass with `editSpritesheet` `edit_mode` `improve` |
 | `forge` | Sprite animation, keyframes, motion transfer, spritesheet editing | Cost-effective, for basic animations and simple sprites; on motion transfer it works best with presets and matching poses. Multiple tries might be needed. 1.5 credits/s on animation, 2 credits/s on transfer and editing, no minimum charge |
 | `forge-pixel` | Same actions as `forge` | Same pricing as `forge`; for low-res pixel-art sprites |
-| `griffin` | Video generation (default), video from references (default) | Fast cinematic 480p video with a soundtrack. 1.5 credits/s (2.5 credits/s from references), 5s minimum |
-| `griffin-hd` | Video editing (default), video generation, video from references | Same as Griffin in 720p. 2 credits/s (4 credits/s from references), 5s minimum. Its output is too large for `upscaleVideo` |
+| `griffin-hd` | Video generation, video from references and video editing (the default for all three) | Cinematic video in any style with a soundtrack, 720p. 2 credits/s on all three, 5s to 15s. Landscape and portrait output is too large for `upscaleVideo` |
+
+`griffin` (480p) was retired from video generation and video from references on 2026-10-27. Requests that name it are rejected; use `griffin-hd`.
 
 **Legacy models** - `blitz`, `eagle`, `eagle-audio`, `tango` (and the alias `standard`) - are still accepted so existing integrations keep working, but they are scheduled for removal. Do not use them for new work. The server marks them `LEGACY` in every tool description and lists them last.
 
@@ -562,20 +563,20 @@ Generate a sound effect for a spritesheet animation you previously generated. Sp
 
 ### Video Generation (`createVideo`)
 
-Generate short videos from a source image and a motion prompt (image-to-video). A source `image` is required: to make a video from text alone, first `createImage` and animate that, or use `createVideoFromReferences`. Both current models generate a soundtrack, so no separate audio step is needed.
+Generate short videos from a source image and a motion prompt (image-to-video). A source `image` is required: to make a video from text alone, first `createImage` and animate that, or use `createVideoFromReferences`. The current model generates a soundtrack, so no separate audio step is needed.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64 starting frame |
 | `prompt` | Yes | Motion description (e.g., "camera zooms in", "character walks forward") |
-| `duration` | No | Default `5`s. Griffin / Griffin HD: `5`–`15`s in 1s steps |
-| `model` | No | `griffin` (default; 480p, with soundtrack), `griffin-hd` (720p, with soundtrack; cannot be upscaled afterwards). Legacy, avoid for new work: `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
+| `duration` | No | Default `5`s. Griffin HD: `5`–`15`s in 1s steps |
+| `model` | No | `griffin-hd` (default; 720p, with soundtrack). Legacy, avoid for new work: `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
 | `final_image` | No | Ending frame for interpolation |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `url`, `duration`, `has_audio`
 
-**Credits:** rate × seconds - Griffin: 1.5/sec (the default 5s = 7.5); Griffin HD: 2/sec (5s = 10). Legacy: Blitz 1/sec, Eagle 1.3/sec, Eagle with Audio 1.8/sec.
+**Credits:** rate × seconds - Griffin HD: 2/sec (the default 5s = 10). Legacy: Blitz 1/sec, Eagle 1.3/sec, Eagle with Audio 1.8/sec.
 
 ---
 
@@ -588,13 +589,13 @@ Generate a video from 1-5 reference images and a text prompt. Unlike `createVide
 | `prompt` | Yes | Text description of the video to generate |
 | `images` | Yes | 1 to 5 reference images (URL or base64) |
 | `duration` | No | Video length in seconds: `5`–`15` (default 5) |
-| `model` | No | `griffin` (default; 480p, with soundtrack), `griffin-hd` (720p). Legacy, avoid for new work: `eagle`, `eagle-audio` |
+| `model` | No | `griffin-hd` (default; 720p, with soundtrack). Legacy, avoid for new work: `eagle`, `eagle-audio` |
 | `aspect_ratio` | No | `default` (model chooses), `ar_1_1`, `ar_16_9`, `ar_9_16`, `ar_4_3`, `ar_3_4`, `ar_21_9` |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `url`, `duration`, `has_audio`
 
-**Credits:** rate × seconds, higher than `createVideo` for the same model - Griffin: 2.5/sec (the default 5s = 12.5); Griffin HD: 4/sec (5s = 20). Legacy: Eagle 1.5/sec, Eagle with Audio 2/sec.
+**Credits:** rate × seconds, the same rate as `createVideo` - Griffin HD: 2/sec (the default 5s = 10). Legacy: Eagle 1.5/sec, Eagle with Audio 2/sec.
 
 ---
 
@@ -619,7 +620,7 @@ Edit a video you previously generated with a text prompt and optional reference 
 
 ### Upscale Video (`upscaleVideo`)
 
-Upscale a video you previously generated to twice its resolution (2x). Pass back the `url` you received from `createVideo`, `createVideoFromReferences`, or `editVideo`; it must be a video you generated in the last 7 days (external URLs are not accepted). Both dimensions of the source must be under 960 pixels: `griffin` (480p) output qualifies, `griffin-hd` (720p) output does not (landscape or portrait), so generate on `griffin` if you intend to upscale. A too-large source fails the job and the held credits are refunded.
+Upscale a video you previously generated to twice its resolution (2x). Pass back the `url` you received from `createVideo`, `createVideoFromReferences`, or `editVideo`; it must be a video you generated in the last 7 days (external URLs are not accepted). Both dimensions of the source must be under 960 pixels: `griffin-hd` (720p) landscape and portrait output is larger than that, so a current-model video qualifies only when it is square. A too-large source fails the job and the held credits are refunded.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
