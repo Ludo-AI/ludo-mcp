@@ -21,13 +21,47 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 
 ### 1. Get an API Key
 
-Sign up at [ludo.ai](https://ludo.ai) and get your API key from [app.ludo.ai](https://app.ludo.ai).
+API access comes with the Pro and Studio plans. Create a key at [app.ludo.ai/api-keys](https://app.ludo.ai/api-keys); it is shown only once.
+
+Using a coding agent (Claude Code, Codex, Cursor)? The [Ludo CLI](https://github.com/Ludo-AI/ludo-cli) is the better fit: the agent loads only the commands it needs, and files go in and out by path.
 
 ### 2. Configure Your MCP Client
 
-#### Claude Desktop
+The server speaks Streamable HTTP at `https://mcp.ludo.ai/mcp`. Every client sends the key in a header:
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+```
+Authorization: ApiKey YOUR_API_KEY
+```
+
+Setups for eleven clients, including Windsurf, Cline, Zed and Kiro, are on [ludo.ai/developers/mcp](https://ludo.ai/developers/mcp).
+
+#### Claude Code
+
+```sh
+claude mcp add --transport http ludo https://mcp.ludo.ai/mcp --header "Authorization: ApiKey YOUR_API_KEY"
+```
+
+Add `-s user` to use it in every project.
+
+#### Claude Desktop and claude.ai
+
+Open **Customize > Connectors**, click **Add**, then **Add custom connector**. Name it Ludo, use the URL `https://mcp.ludo.ai/mcp`, and under **Request headers** add `Authorization: ApiKey YOUR_API_KEY`. (`claude_desktop_config.json` only starts local servers; a remote server goes in as a connector.)
+
+#### Codex
+
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.ludo]
+url = "https://mcp.ludo.ai/mcp"
+
+[mcp_servers.ludo.http_headers]
+Authorization = "ApiKey YOUR_API_KEY"
+```
+
+#### Cursor
+
+Add to `~/.cursor/mcp.json` (or `.cursor/mcp.json` in a project):
 
 ```json
 {
@@ -42,18 +76,42 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 }
 ```
 
-#### Cursor
+#### VS Code
 
-Add to your MCP settings in Cursor preferences:
+Add to `.vscode/mcp.json`, then use Copilot Chat in Agent mode. VS Code asks for the key once and stores it securely:
+
+```json
+{
+  "inputs": [
+    { "type": "promptString", "id": "ludo-api-key", "description": "Ludo.ai API key", "password": true }
+  ],
+  "servers": {
+    "ludo": {
+      "type": "http",
+      "url": "https://mcp.ludo.ai/mcp",
+      "headers": { "Authorization": "ApiKey ${input:ludo-api-key}" }
+    }
+  }
+}
+```
+
+#### Gemini CLI
+
+```sh
+gemini mcp add -s user --transport http --header "Authorization: ApiKey YOUR_API_KEY" ludo https://mcp.ludo.ai/mcp
+```
+
+#### Clients that only run local servers
+
+Bridge with [`mcp-remote`](https://github.com/geelen/mcp-remote) (needs Node.js). Keep the header argument free of spaces and pass the key through `env`:
 
 ```json
 {
   "mcpServers": {
     "ludo": {
-      "url": "https://mcp.ludo.ai/mcp",
-      "headers": {
-        "Authorization": "ApiKey YOUR_API_KEY"
-      }
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.ludo.ai/mcp", "--header", "Authorization:${LUDO_AUTH}"],
+      "env": { "LUDO_AUTH": "ApiKey YOUR_API_KEY" }
     }
   }
 }
