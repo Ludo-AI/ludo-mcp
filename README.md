@@ -6,14 +6,14 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 
 | Category | Capabilities |
 |----------|-------------|
-| **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal, upscaling |
+| **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal, upscaling, pixel-art conversion |
 | **3D Models** | Character images ready for a 3D model (from a prompt, or your own image redrawn as a 3D render), convert 2D images to GLB models with PBR textures (prop or the more detailed hero model, rigged in the same call if you like), auto-rig models (skeleton + skin weights, engine-ready joint naming), text-driven skeletal animation, retarget curated animation presets onto rigged models |
-| **Directional Sprites** | Render a 3D model as styled sprites from up to 8 directions that line up, in looks from pixel art to painted to 3D render, animated with a preset or your own clip, previewed for free before you render |
-| **Animation** | Animated spritesheets from static sprites (4-64 frames), keyframe animation through up to three fixed frames, motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing, finer-detail re-render), sound effects for a spritesheet |
+| **Directional Sprites** | Render a 3D model as styled sprites from up to 8 directions that line up, in looks from pixel art to painted to 3D render, animated with a preset or your own clip, holding fitted accessories (swords, shields, helmets...), previewed for free before you render |
+| **Animation** | Animated spritesheets from static sprites (4-64 frames), keyframe animation through up to three fixed frames, motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing, finer-detail re-render), free re-export with other sheet settings, sound effects for a spritesheet |
 | **Video** | Generate short videos from images or reference images (5-15 seconds, with a soundtrack), prompt-driven video editing, 2x upscaling |
 | **Audio** | Sound effects, background music, character voices, TTS |
 | **Jobs & History** | Async job queue: submit, poll or long-poll, list and cancel jobs (queued jobs refund their credits), plus paginated generation history across the API and the web app |
-| **Account** | Credit balance, plan and auto top-up settings, to check before an expensive generation |
+| **Account** | Credit balance, plan and auto top-up settings, to check before an expensive generation; plans, prices and what each call costs |
 | **Documentation** | Search or read Ludo's own feature guidance before generating: animation modes, model choice, margins, known limitations |
 | **Feedback** | Report a limitation, bug or missing capability straight to the Ludo team |
 
@@ -128,14 +128,14 @@ Sprite animation, motion transfer, spritesheet editing and video generation take
 | Model | Used for | Notes |
 |-------|----------|-------|
 | `hydra` | Sprite animation, keyframes, motion transfer and spritesheet editing (the default for all four) | Most capable all-around model; its spritesheets come with a generated sound effect (`audio_url`, an mp3). 3 credits/s, shortest animation 3s (9 credits minimum) |
-| `hydra-plus` | Sprite animation, keyframes, new view (`rotateSpritesheet`) | Hydra with better fine details; slower generations. Also returns `audio_url`. 4 credits/s, shortest animation 3s (12 credits minimum). A sheet already made on `hydra` can get the same extra pass with `editSpritesheet` `edit_mode` `improve` |
+| `griffin-hd` (Griffin) | Sprite animation, keyframes and spritesheet editing | High resolution animations, best for highly detailed sprites. Flat 12 credits per animation; always 5s |
 | `forge` | Sprite animation, keyframes, motion transfer, spritesheet editing | Cost-effective, for basic animations and simple sprites; on motion transfer it works best with presets and matching poses. Multiple tries might be needed. 1.5 credits/s on animation, 2 credits/s on transfer and editing, no minimum charge |
 | `forge-pixel` | Same actions as `forge` | Same pricing as `forge`; for low-res pixel-art sprites |
-| `griffin-hd` | Video generation, video from references and video editing (the default for all three) | Cinematic video in any style with a soundtrack, 720p. 2 credits/s on all three, 5s to 15s. Landscape and portrait output is too large for `upscaleVideo` |
+| `griffin-hd` (Griffin) | Video generation, video from references and video editing (the default for all three) | Cinematic video in any style with a soundtrack, 720p. 2 credits/s on all three, 5s to 15s. Landscape and portrait output is too large for `upscaleVideo` |
 
 `griffin` (480p) was retired from video generation and video from references on 2026-10-27. Requests that name it are rejected; use `griffin-hd`.
 
-**Legacy models** - `blitz`, `eagle`, `eagle-audio`, `tango` (and the alias `standard`) - are still accepted so existing integrations keep working, but they are scheduled for removal. Do not use them for new work. The server marks them `LEGACY` in every tool description and lists them last.
+**Legacy models** - `hydra-plus` (since 2026-11-02), `blitz`, `eagle`, `eagle-audio`, `tango` (and the alias `standard`) - are still accepted so existing integrations keep working, but they are scheduled for removal. Do not use them for new work. The server marks them `LEGACY` in every tool description and lists them last.
 
 
 ### Search Documentation (`searchDocs`)
@@ -300,6 +300,21 @@ The same image at a higher resolution, up to 4x, with the result capped at 2048p
 
 **Credits:** 0.5 per image
 
+### Convert to Pixel Art (`convertToPixelArt`)
+
+Any art, broken AI pixel art or pixel art comes back as pixel art at about the input's own size. Synchronous: the call answers with the result directly, with no job to poll.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `image` | Yes | URL or base64-encoded image, up to 15MB |
+| `pixel_size` | No | Size of one pixel-art pixel in the input's pixels (at least 2); larger is coarser. Omit to use the image's own pixel grid, which must be detectable (otherwise HTTP 400 asks for a `pixel_size`). On an input already on a grid it snaps to whole steps of that grid |
+| `palette_size` | No | At most this many colours (2-256); omit to keep the colours |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+**Returns:** `url`, `pixel_size` (yours, or the detected one, which can be fractional), and `columns` / `rows`, the art's size in pixel-art pixels: resize to columns x rows with nearest-neighbour for one image pixel per art pixel
+
+**Credits:** Free (20 calls per 5 minutes, 120 an hour, 1,000 a day)
+
 ---
 
 ### 3D Model Generation (`create3DModel`)
@@ -406,9 +421,47 @@ Render a 3D model as styled sprites seen from up to 8 directions (where the came
 1. *(Optional)* A character image: `create3DModelImage` from a prompt, or your own image redrawn as a 3D render.
 2. A rigged model: `create3DModel` with that image and `rig: true` (or `rigModel` for a model you already have). Any rig type can take an animation preset, though retargeting does not succeed on every model.
 3. *(Optional)* An animation, at most one: a `preset_id` from `listAnimationPresets`, or an `animation_url` made for this model by `animate3DModelPreset` or `animate3DModel`. With none, the sprites are a still pose.
-4. `listDirectionalSpriteStyles`: pick a look.
-5. `previewDirectionalSprites`: check it, free.
-6. `createDirectionalSprites` for animated spritesheets, or `createDirectionalStills` for still images.
+4. *(Optional)* Accessories: `fitDirectionalAccessory` for each item (a sword, a shield, a helmet...), adjusted until it looks right, then `attachDirectionalAccessories` for one model holding them all. Use its `model_url` as `model` from here on.
+5. `listDirectionalSpriteStyles`: pick a look.
+6. `previewDirectionalSprites`: check it, free.
+7. `createDirectionalSprites` for animated spritesheets, or `createDirectionalStills` for still images.
+
+#### `fitDirectionalAccessory`
+
+Fit one item GLB to a rigged model, held by one bone: a hand, the head, the back or the hips. The item is first placed automatically for its `kind` (a sword by its handle, a gun by its pistol grip, a shield on the forearm, a helmet over the head, a backpack on the back), and the hand closes round it. Adjust it relative to that automatic fit and call again until it looks right: each call starts from the automatic fit, so send the full adjustment every time. Nothing is saved. Free and synchronous (not a job): a few seconds with previews, about a second without.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `model` | Yes | The rigged model (`create3DModel` with `rig: true`, or `rigModel`), URL or base64 GLB, up to 30MB |
+| `item` | Yes | The item, any 3D model (`create3DModel` without rig), URL or base64 GLB, up to 30MB |
+| `name` | No | What the item is, in words ("rusty sword"); used to guess `kind` when it is omitted |
+| `kind` | No | `blade`, `gun`, `staff`, `bow`, `shield`, `helmet`, `hat`, `back`, ...: decides how it is first held |
+| `point` / `bone` | No | Where it goes: an attach point (the response lists the ones this skeleton has), or a bone by name. Default: where its kind goes |
+| `size` | No | % of the automatic fit's size (100 = as fitted) |
+| `move` | No | `{forward, up, out}` in % of the character's height, e.g. `{"up": 3}` |
+| `turn` | No | `{forward, up, out}` in degrees |
+| `flip` | No | Hold it by its other end |
+| `grip` | No | Close the hand round it (skeletons with finger bones) |
+| `preview` | No | `false` returns only the fit and its checks |
+| `preview_preset_id` | No | The animation preset the previews show |
+
+**Returns:** the fit as applied (`kind`, `point`, `bone`, `size`, `move`, `turn`, `flip`, `grip`), the `placement` to pass to `attachDirectionalAccessories`, `checks` (how far the item sinks into the body, how far its grip is from the palm, how much of the head pokes through a helmet), `points` (this skeleton's attach points) and, unless `preview` is false, `model_url` (the model holding the item, kept 7 days) and `previews` (4 walking frames each from SW and SE). Previews share `previewDirectionalSprites`' one-at-a-time slot; when they could not be made, `preview_error` says why and the fit is still valid.
+
+**Credits:** Free (30 calls per 5 minutes, 200 an hour, 1,000 a day)
+
+#### `attachDirectionalAccessories`
+
+Put up to 8 items on the model, each at the `placement` `fitDirectionalAccessory` returned (or, without one, at the automatic fit plus the same `kind` / `point` / `bone` / `size` / `move` / `turn` / `flip` / `grip` adjustments). At most one item closes each hand: the first one listed. Free and synchronous.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `model` | Yes | The rigged model, URL or base64 GLB, up to 30MB. The URL of one of your 3D models also saves the items on it |
+| `items` | Yes | Every item the model holds: `item` (URL or base64 GLB, as sent to the fit), `name`, and `placement` or the adjustments above |
+| `save_on_model` | No | `false` only builds the GLB, without saving the items on your model |
+
+**Returns:** `model_url` (one GLB of the model holding every item, kept 7 days: pass it as `model` to `previewDirectionalSprites`, `createDirectionalSprites` or `createDirectionalStills`), `saved` (whether the items were saved on your model, which replaces its previous items and shows them in the Ludo web app's Directional Sprites) and `items`
+
+**Credits:** Free (20 calls per 5 minutes, 300 a day)
 
 #### `listDirectionalSpriteStyles`
 
@@ -473,8 +526,8 @@ Create animated spritesheets from static images. Use this when you can describe 
 | `margin_ratio` | No | *Deprecated* - uniform padding on both axes, equivalent to setting both per-axis params to the same value. Cannot be combined with the per-axis params (fails with 400) |
 | `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
 | `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
-| `model` | No | `hydra` (default; most capable all-around, generates audio), `hydra-plus` (hydra with better fine details, slower; also generates audio), `forge` (only for basic animations and simple sprites; multiple tries might be needed), `forge-pixel` (low-res pixel art). Legacy, avoid for new work: `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
-| `duration` | No | Default `3`s. Hydra / Hydra+: `3`–`5`s in 0.5 steps; Forge / Forge Pixel: `1`–`5`s in 0.5 steps. A model that does not offer the requested default falls back to its shortest |
+| `model` | No | `hydra` (default; most reliable all-around, generates audio), `griffin-hd` (Griffin: high resolution animations, best for highly detailed sprites), `forge` (only for basic animations and simple sprites; multiple tries might be needed), `forge-pixel` (low-res pixel art). Legacy, avoid for new work: `hydra-plus`, `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
+| `duration` | No | Default `3`s. Hydra / Hydra+: `3`–`5`s in 0.5 steps; Griffin: `5`s only; Forge / Forge Pixel: `1`–`5`s in 0.5 steps. A model that does not offer the requested default falls back to its shortest |
 | `final_image` | No | Ending frame for interpolation |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
@@ -483,7 +536,7 @@ Create animated spritesheets from static images. Use this when you can describe 
 
 **Returns:** `spritesheet_url` (the sheet), `video_url` (an mp4 of the animation - pass it to `transferMotion` as `video` or to `createSpriteAudio` as `spritesheet_video_url`), `audio_url` (hydra and hydra-plus only: URL of a generated sound effect (mp3), so there is no need to call `createSpriteAudio`), `num_frames`, `num_cols`, `num_rows`, `duration` (seconds, to play the sheet at its real speed), and when requested `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`
 
-**Credits:** rate × seconds - Hydra: 3/sec (shortest 3s, so 9 minimum; the default 3s = 9); Hydra+: 4/sec (shortest 3s, so 12 minimum); Forge and Forge Pixel: 1.5/sec, no minimum (3s = 4.5). Legacy: Blitz 1.9/sec, Eagle 2.6/sec, Eagle with Audio 3.1/sec, all with a 4-credit minimum.
+**Credits:** rate × seconds - Hydra: 3/sec (shortest 3s, so 9 minimum; the default 3s = 9); Forge and Forge Pixel: 1.5/sec, no minimum (3s = 4.5). Griffin: flat 12 per animation. Legacy: Hydra+ 4/sec (shortest 3s, so 12 minimum); Blitz 1.9/sec, Eagle 2.6/sec, Eagle with Audio 3.1/sec, all with a 4-credit minimum.
 **Processing time:** 30-90 seconds
 
 #### Writing the motion prompt
@@ -499,7 +552,7 @@ Applies to `animateSprite` and `animateSpriteKeyframes`.
 
 ### Keyframe Animation (`animateSpriteKeyframes`)
 
-Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_image`, `final_image`), producing a spritesheet that interpolates through the provided frames in order. Runs on `hydra` (default), `hydra-plus`, `forge` or `forge-pixel` - the models that support a middle keyframe. The motion prompt is optional here: when omitted, the motion is derived purely from the keyframes. For just a start and end frame, `animateSprite` with `final_image` does the same job.
+Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_image`, `final_image`), producing a spritesheet that interpolates through the provided frames in order. Runs on `hydra` (default), `griffin-hd`, `forge` or `forge-pixel` (and the legacy `hydra-plus`) - the models that support a middle keyframe. The motion prompt is optional here: when omitted, the motion is derived purely from the keyframes. For just a start and end frame, `animateSprite` with `final_image` does the same job.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -508,7 +561,7 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 | `final_image` | No | URL or base64 of the final keyframe |
 | `motion_prompt` | No | Optional animation description (e.g., "attack slash"); without it the keyframes drive the motion. See [Writing the motion prompt](#writing-the-motion-prompt) |
 | `image_type` | No | `sprite` (default), `sprite-vfx`, `ui_asset` |
-| `model` | No | `hydra` (default; generates audio), `hydra-plus` (hydra with better fine details; also generates audio), `forge`, or `forge-pixel` for pixel-art sprites |
+| `model` | No | `hydra` (default; generates audio), `griffin-hd` (Griffin: high resolution, for highly detailed sprites), `forge`, or `forge-pixel` for pixel-art sprites. Legacy: `hydra-plus` |
 | `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
 | `frame_size` | No | `0` (default, max resolution), `32`, `64`, `96`, `128`, `192`, `256`, `384`, `-1` (AI 1.5× upscale), `-9` (match input frame) |
 | `loop` | No | Seamless loop (default: true) |
@@ -518,7 +571,7 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 | `margin_ratio` | No | *Deprecated* - uniform padding on both axes; cannot be combined with the per-axis params (fails with 400) |
 | `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
 | `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
-| `duration` | No | Default `3`s. Hydra / Hydra+: `3`–`5`s; Forge / Forge Pixel: `1`–`5`s in 0.5 steps. Three keyframes need the room: at 1s the opening transition is compressed away |
+| `duration` | No | Default `3`s. Hydra / Hydra+: `3`–`5`s; Griffin: `5`s only; Forge / Forge Pixel: `1`–`5`s in 0.5 steps. Three keyframes need the room: at 1s the opening transition is compressed away |
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
@@ -526,7 +579,7 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 
 **Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_url` on hydra and hydra-plus, `gif_url`, `num_frames`, `num_cols`, `num_rows`, `duration`, ...)
 
-**Credits:** same as `animateSprite` - Hydra 3/sec (3s = 9); Hydra+ 4/sec (3s = 12); Forge / Forge Pixel 1.5/sec, no minimum (1s = 1.5, 3s = 4.5, 4s = 6)
+**Credits:** same as `animateSprite` - Hydra 3/sec (3s = 9); Griffin flat 12; Forge / Forge Pixel 1.5/sec, no minimum (1s = 1.5, 3s = 4.5, 4s = 6); legacy Hydra+ 4/sec (3s = 12)
 **Processing time:** 30-90 seconds
 
 ---
@@ -587,7 +640,7 @@ Edit a spritesheet you previously generated: re-prompt its animation, outpaint b
 | `prompt` | No | Edit instruction. Required for `prompt` mode, optional for `outpaint`, not accepted for `fix_loop` or `improve` |
 | `images` | No | Up to 5 reference images (URL or base64) to guide the edit |
 | `duration` | No | Output length in seconds (per model, as on `animateSprite`). Omit to keep the source spritesheet's duration. It does not change the price of `fix_loop`, `outpaint` or `improve`, which bill the source spritesheet's video length |
-| `model` | No | `hydra` (default), `forge`, `forge-pixel`. Omit to keep the source spritesheet's model. Only used by `prompt` mode; `outpaint`, `fix_loop` and `improve` run a fixed pipeline and ignore it |
+| `model` | No | `hydra` (default), `griffin-hd` (Griffin, always 5s), `forge`, `forge-pixel`. Omit to keep the source spritesheet's model. Only used by `prompt` mode; `outpaint`, `fix_loop` and `improve` run a fixed pipeline and ignore it |
 | `crop` | No | Crop frames to fit content. Omit to keep the source's setting |
 | `loop` | No | Trim animation for seamless loop (default: true) |
 | `frames` | No | Frames in the output spritesheet: `4`, `9`, `16`, `25`, `36`, `49`, `64`. Defaults to the source's frame count |
@@ -599,7 +652,26 @@ Edit a spritesheet you previously generated: re-prompt its animation, outpaint b
 
 **Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...). New audio is generated only by `prompt` edits on hydra; `fix_loop`, `outpaint` and `improve` keep the source spritesheet's `audio_url` when it had one
 
-**Credits:** `fix_loop`, `outpaint` and `improve`: flat 1 credit per second of output, held for and capped at the source spritesheet's video length, no minimum, model ignored (a 3s sheet = 3, whatever `duration` you pass). `prompt` edits: per model - Hydra 3/sec (3s = 9), Forge / Forge Pixel 2/sec, no minimum (3s = 6)
+**Credits:** `fix_loop`, `outpaint` and `improve`: flat 1 credit per second of output, held for and capped at the source spritesheet's video length, no minimum, model ignored (a 3s sheet = 3, whatever `duration` you pass). `prompt` edits: per model - Hydra 3/sec (3s = 9), Griffin flat 12, Forge / Forge Pixel 2/sec, no minimum (3s = 6)
+
+### Adjust Spritesheet (`adjustSpritesheet`)
+
+Re-export a spritesheet you generated through the API in the last 7 days with different sheet settings, without generating the animation again: the same video re-cut into a new sheet. Use it to fix framing (an effect clipped by True Size: a fixed `frame_size` or 0), change the frame count or size for your engine, upscale 1.5x (`frame_size` -1), turn loop trimming on or off, or pack it as ordinary art when its detected pixel grid is wrong (`use_pixel_grid: false`). It cannot change the motion, margins or content: use `editSpritesheet` for that. Omit a setting to keep the source's value.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `spritesheet_url` | Yes | A `spritesheet_url` from `animateSprite`, `animateSpriteKeyframes`, `transferMotion`, `editSpritesheet`, `rotateSpritesheet` or an earlier adjust. External URLs are not accepted |
+| `frames` | No | Frames in the new sheet |
+| `frame_size` | No | Sprite size in pixels; `0` max resolution, `-1` AI 1.5x upscaling, `-9` True Size |
+| `loop` | No | Trim for a seamless loop |
+| `crop` | No | Crop frames to their content (ignored with True Size) |
+| `use_pixel_grid` | No | `false` packs as ordinary art when the detected pixel grid is wrong for the asset |
+| `gif` / `individual_frames` / `spritesheet_with_background` | No | Extra outputs, as on `animateSprite` |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+**Returns:** same shape as `animateSprite`, with the source's `audio_url` when it had one. The source is left as it is
+
+**Credits:** Free (20 calls per 5 minutes, 120 an hour, 1,000 a day)
 
 ---
 
@@ -879,6 +951,14 @@ Show your credit balance, plan and auto top-up settings. Check it before an expe
 
 **Credits:** Free
 
+### Pricing (`getPricing`)
+
+What Ludo's paid service costs and includes, for an agent advising a user: every plan with its monthly and annual price, credits, seats and queue concurrency; credit top-ups and their price brackets; what each API call costs; and the `rules` to know before telling a user to pay (the API, MCP and CLI need an active Pro or Studio plan, and there every generation costs credits). Plans are bought in the web app (`links.billing`), not through the API. Works with or without an API key. No parameters.
+
+**Returns:** `currency`, `summary`, `plans` (cheapest first), `top_ups`, `rules`, `costs`, `links`
+
+**Credits:** Free
+
 ### Send Feedback (`submitApiFeedback`)
 
 Report a problem with the Ludo API itself to the Ludo team. Use it only for API bugs (an error, a failed or stuck job, a crash, a response that does not match the documentation) and API limitations (a parameter, operation or format you needed that the API does not support, and that you could not work around). Never use it to report model limitations or the quality of a result: an image, sprite, animation, 3D model, video or sound that looks wrong, ignores part of the prompt, has artifacts or is not what you wanted is not an API bug. Retry with a different prompt, model or settings instead. Describe what you were trying to do and what went wrong. Send one report per issue, leave out personal data, secrets and file contents, and if you are an agent, tell the user what you sent.
@@ -926,6 +1006,7 @@ Credits are held when a job is accepted. For duration-priced tools (sprites and 
 - **50 generations queued or running per account.** Submitting beyond that returns `429` with code `PENDING_JOBS_LIMIT`; wait for jobs to finish, then submit again.
 - **150 requests per 5 minutes** on the read endpoints (job status, job listing, generation history, account, feature documentation), per API key. A `429` carries `Retry-After`.
 - **60 requests per 5 minutes, and 1,000 per day,** on documentation search (`searchDocs`), per API key.
+- **The free synchronous tools** have their own limits, given with each one above: `convertToPixelArt`, `adjustSpritesheet`, `fitDirectionalAccessory` and `attachDirectionalAccessories`.
 
 ## Finding Results Later
 
