@@ -128,7 +128,7 @@ Sprite animation, motion transfer, spritesheet editing and video generation take
 | Model | Used for | Notes |
 |-------|----------|-------|
 | `hydra` | Sprite animation, keyframes, motion transfer and spritesheet editing (the default for all four) | Most capable all-around model; its spritesheets come with a generated sound effect (`audio_url`, an mp3). 3 credits/s, shortest animation 3s (9 credits minimum) |
-| `griffin-hd` (Griffin) | Sprite animation, keyframes and spritesheet editing | High resolution animations, best for highly detailed sprites. Flat 12 credits per animation; always 5s |
+| `griffin-hd` (Griffin) | Sprite animation, keyframes and spritesheet editing | Highest resolution and best image fidelity. Flat 10 credits per animation; up to 5s |
 | `forge` | Sprite animation, keyframes, motion transfer, spritesheet editing | Cost-effective, for basic animations and simple sprites; on motion transfer it works best with presets and matching poses. Multiple tries might be needed. 1.5 credits/s on animation, 2 credits/s on transfer and editing, no minimum charge |
 | `forge-pixel` | Same actions as `forge` | Same pricing as `forge`; for low-res pixel-art sprites |
 | `griffin-hd` (Griffin) | Video generation, video from references and video editing (the default for all three) | Cinematic video in any style with a soundtrack, 720p. 2 credits/s on all three, 5s to 15s. Landscape and portrait output is too large for `upscaleVideo` |
@@ -526,7 +526,7 @@ Create animated spritesheets from static images. Use this when you can describe 
 | `margin_ratio` | No | *Deprecated* - uniform padding on both axes, equivalent to setting both per-axis params to the same value. Cannot be combined with the per-axis params (fails with 400) |
 | `margin_ratio_mode` | No | `auto` (default), `manual`, `none` |
 | `augment_prompt` | No | Augment the motion prompt behind the scenes (default: true) |
-| `model` | No | `hydra` (default; most reliable all-around, generates audio), `griffin-hd` (Griffin: high resolution animations, best for highly detailed sprites), `forge` (only for basic animations and simple sprites; multiple tries might be needed), `forge-pixel` (low-res pixel art). Legacy, avoid for new work: `hydra-plus`, `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
+| `model` | No | `hydra` (default; best motion and prompt adherence, generates audio), `griffin-hd` (Griffin: highest resolution and best image fidelity), `forge` (cheapest, for simple body shapes and simple actions), `forge-pixel` (low-res pixel art). Legacy, avoid for new work: `hydra-plus`, `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
 | `duration` | No | Default `3`s. Hydra / Hydra+: `3`–`5`s in 0.5 steps; Griffin: `5`s only; Forge / Forge Pixel: `1`–`5`s in 0.5 steps. A model that does not offer the requested default falls back to its shortest |
 | `final_image` | No | Ending frame for interpolation |
 | `gif` | No | Generate an animated GIF (default: false) |
@@ -536,7 +536,7 @@ Create animated spritesheets from static images. Use this when you can describe 
 
 **Returns:** `spritesheet_url` (the sheet), `video_url` (an mp4 of the animation - pass it to `transferMotion` as `video` or to `createSpriteAudio` as `spritesheet_video_url`), `audio_url` (hydra and hydra-plus only: URL of a generated sound effect (mp3), so there is no need to call `createSpriteAudio`), `num_frames`, `num_cols`, `num_rows`, `duration` (seconds, to play the sheet at its real speed), and when requested `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`
 
-**Credits:** rate × seconds - Hydra: 3/sec (shortest 3s, so 9 minimum; the default 3s = 9); Forge and Forge Pixel: 1.5/sec, no minimum (3s = 4.5). Griffin: flat 12 per animation. Legacy: Hydra+ 4/sec (shortest 3s, so 12 minimum); Blitz 1.9/sec, Eagle 2.6/sec, Eagle with Audio 3.1/sec, all with a 4-credit minimum.
+**Credits:** rate × seconds - Hydra: 3/sec (shortest 3s, so 9 minimum; the default 3s = 9); Forge and Forge Pixel: 1.5/sec, no minimum (3s = 4.5). Griffin: flat 10 per animation. Legacy: Hydra+ 4/sec (shortest 3s, so 12 minimum); Blitz 1.9/sec, Eagle 2.6/sec, Eagle with Audio 3.1/sec, all with a 4-credit minimum.
 **Processing time:** 30-90 seconds
 
 #### Writing the motion prompt
@@ -561,7 +561,7 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 | `final_image` | No | URL or base64 of the final keyframe |
 | `motion_prompt` | No | Optional animation description (e.g., "attack slash"); without it the keyframes drive the motion. See [Writing the motion prompt](#writing-the-motion-prompt) |
 | `image_type` | No | `sprite` (default), `sprite-vfx`, `ui_asset` |
-| `model` | No | `hydra` (default; generates audio), `griffin-hd` (Griffin: high resolution, for highly detailed sprites), `forge`, or `forge-pixel` for pixel-art sprites. Legacy: `hydra-plus` |
+| `model` | No | `hydra` (default; generates audio), `griffin-hd` (Griffin: highest resolution and best image fidelity), `forge`, or `forge-pixel` for pixel-art sprites. Legacy: `hydra-plus` |
 | `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
 | `frame_size` | No | `0` (default, max resolution), `32`, `64`, `96`, `128`, `192`, `256`, `384`, `-1` (AI 1.5× upscale), `-9` (match input frame) |
 | `loop` | No | Seamless loop (default: true) |
@@ -579,7 +579,7 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 
 **Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_url` on hydra and hydra-plus, `gif_url`, `num_frames`, `num_cols`, `num_rows`, `duration`, ...)
 
-**Credits:** same as `animateSprite` - Hydra 3/sec (3s = 9); Griffin flat 12; Forge / Forge Pixel 1.5/sec, no minimum (1s = 1.5, 3s = 4.5, 4s = 6); legacy Hydra+ 4/sec (3s = 12)
+**Credits:** same as `animateSprite` - Hydra 3/sec (3s = 9); Griffin flat 10; Forge / Forge Pixel 1.5/sec, no minimum (1s = 1.5, 3s = 4.5, 4s = 6); legacy Hydra+ 4/sec (3s = 12)
 **Processing time:** 30-90 seconds
 
 ---
@@ -640,7 +640,7 @@ Edit a spritesheet you previously generated: re-prompt its animation, outpaint b
 | `prompt` | No | Edit instruction. Required for `prompt` mode, optional for `outpaint`, not accepted for `fix_loop` or `improve` |
 | `images` | No | Up to 5 reference images (URL or base64) to guide the edit |
 | `duration` | No | Output length in seconds (per model, as on `animateSprite`). Omit to keep the source spritesheet's duration. It does not change the price of `fix_loop`, `outpaint` or `improve`, which bill the source spritesheet's video length |
-| `model` | No | `hydra` (default), `griffin-hd` (Griffin, always 5s), `forge`, `forge-pixel`. Omit to keep the source spritesheet's model. Only used by `prompt` mode; `outpaint`, `fix_loop` and `improve` run a fixed pipeline and ignore it |
+| `model` | No | `hydra` (default), `griffin-hd` (Griffin, up to 5s), `forge`, `forge-pixel`. Omit to keep the source spritesheet's model. Only used by `prompt` mode; `outpaint`, `fix_loop` and `improve` run a fixed pipeline and ignore it |
 | `crop` | No | Crop frames to fit content. Omit to keep the source's setting |
 | `loop` | No | Trim animation for seamless loop (default: true) |
 | `frames` | No | Frames in the output spritesheet: `4`, `9`, `16`, `25`, `36`, `49`, `64`. Defaults to the source's frame count |
@@ -652,7 +652,7 @@ Edit a spritesheet you previously generated: re-prompt its animation, outpaint b
 
 **Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...). New audio is generated only by `prompt` edits on hydra; `fix_loop`, `outpaint` and `improve` keep the source spritesheet's `audio_url` when it had one
 
-**Credits:** `fix_loop`, `outpaint` and `improve`: flat 1 credit per second of output, held for and capped at the source spritesheet's video length, no minimum, model ignored (a 3s sheet = 3, whatever `duration` you pass). `prompt` edits: per model - Hydra 3/sec (3s = 9), Griffin flat 12, Forge / Forge Pixel 2/sec, no minimum (3s = 6)
+**Credits:** `fix_loop`, `outpaint` and `improve`: flat 1 credit per second of output, held for and capped at the source spritesheet's video length, no minimum, model ignored (a 3s sheet = 3, whatever `duration` you pass). `prompt` edits: per model - Hydra 3/sec (3s = 9), Griffin flat 10, Forge / Forge Pixel 2/sec, no minimum (3s = 6)
 
 ### Adjust Spritesheet (`adjustSpritesheet`)
 
