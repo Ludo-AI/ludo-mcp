@@ -21,7 +21,7 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 
 ### 1. Get an API Key
 
-API access comes with the Pro and Studio plans. Create a key at [app.ludo.ai/api-keys](https://app.ludo.ai/api-keys); it is shown only once.
+API access comes with every paid plan. Create a key at [app.ludo.ai/api-keys](https://app.ludo.ai/api-keys); it is shown only once.
 
 Using a coding agent (Claude Code, Codex, Cursor)? The [Ludo CLI](https://github.com/Ludo-AI/ludo-cli) is the better fit: the agent loads only the commands it needs, and files go in and out by path.
 
