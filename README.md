@@ -953,7 +953,7 @@ Show your credit balance, plan and auto top-up settings. Check it before an expe
 
 ### Pricing (`getPricing`)
 
-What Ludo's paid service costs and includes, for an agent advising a user: every plan with its monthly and annual price, credits, seats and queue concurrency; credit top-ups and their price brackets; what each API call costs; and the `rules` to know before telling a user to pay (the API, MCP and CLI need an active Pro or Studio plan, and there every generation costs credits). Plans are bought in the web app (`links.billing`), not through the API. Works with or without an API key. No parameters.
+What Ludo's paid service costs and includes, for an agent advising a user: every plan with its monthly and annual price, credits, seats and queue concurrency; credit top-ups and their price brackets; what each API call costs; and the `rules` to know before telling a user to pay (the API, MCP and CLI need an active paid plan, and there every generation costs credits). Plans are bought in the web app (`links.billing`), not through the API. Works with or without an API key. No parameters.
 
 **Returns:** `currency`, `summary`, `plans` (cheapest first), `top_ups`, `rules`, `costs`, `links`
 
