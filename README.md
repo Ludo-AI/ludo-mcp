@@ -7,9 +7,9 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 | Category | Capabilities |
 |----------|-------------|
 | **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal, upscaling, pixel-art conversion |
-| **3D Models** | Character images ready for a 3D model (from a prompt, or your own image redrawn as a 3D render), convert 2D images to GLB models with PBR textures (prop or the more detailed hero model, rigged in the same call if you like), auto-rig models (skeleton + skin weights, engine-ready joint naming), text-driven skeletal animation, retarget curated animation presets onto rigged models |
-| **Directional Sprites** | Render a 3D model as styled sprites from up to 8 directions that line up, in looks from pixel art to painted to 3D render, animated with a preset or your own clip, holding fitted accessories (swords, shields, helmets...), previewed for free before you render |
-| **Animation** | Animated spritesheets from static sprites (4-64 frames), keyframe animation through up to three fixed frames, motion transfer from video or presets, spritesheet editing (re-prompt, outpaint, loop fixing, finer-detail re-render), free re-export with other sheet settings, sound effects for a spritesheet |
+| **3D Models** | Character images ready for a 3D model (from a prompt, or your own image redrawn as a 3D render), convert 2D images to GLB models with PBR textures (prop or the more detailed hero model, rigged in the same call if you like), auto-rig models (skeleton + skin weights, engine-ready joint naming), text-driven skeletal animation, reusable animations generated from a text prompt and kept on your account, retarget curated animation presets or your own animations onto rigged models (mirrored if you like) |
+| **Directional Sprites** | Render a 3D model as styled sprites from up to 8 directions that line up, in looks from pixel art to painted to 3D render, animated with a preset, one of your generated animations or your own clip, holding fitted accessories (swords, shields, helmets...), previewed for free before you render |
+| **Animation** | Animated spritesheets from static sprites (4-64 frames), keyframe animation through up to three fixed frames, motion transfer from video, presets or your generated animations, spritesheet editing (re-prompt, outpaint, loop fixing, finer-detail re-render), free re-export with other sheet settings, sound effects for a spritesheet |
 | **Video** | Generate short videos from images or reference images (5-15 seconds, with a soundtrack), prompt-driven video editing, 2x upscaling |
 | **Audio** | Sound effects, background music, character voices, TTS |
 | **Jobs & History** | Async job queue: submit, poll or long-poll, list and cancel jobs (queued jobs refund their credits), plus paginated generation history across the API and the web app |
@@ -395,19 +395,60 @@ Generate text-driven skeletal animations for an **already-rigged** 3D model (rig
 
 ---
 
+### Generate an Animation (`createAnimation`)
+
+Generate a reusable animation from a text prompt (text-to-motion): the skeletal motion of a humanoid character, such as "overhead sword slash" or "zombie walk", made for no model in particular. It is saved to your account and does not expire, so generate a move once and reuse it on every character. No model or sprite is animated by this call: pass an animation's `id` as `animation_id` wherever an animation preset goes, to `animate3DModelPreset` (retarget it onto a rigged GLB, which gives the GLB), `previewDirectionalSprites` and `createDirectionalSprites` (render it on a 3D model from up to 8 directions) or `transferMotion` (onto a 2D sprite, seen from a `perspective` and a `direction`). To animate one rigged model straight from a prompt, use `animate3DModel` instead.
+
+Look through `listAnimationPresets` first: a preset is curated and ready to use. Generate an animation when no preset covers the move.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `prompt` | Yes | The move, in any language; a few words are enough (e.g., "overhead sword slash", "zombie walk", "jumps and lands in a crouch"). Describe only how the body moves: props, scenery, clothing and the camera are not part of an animation. Up to 1,000 characters |
+| `num_variants` | No | How many animations to generate from the prompt (1-4, default: 1), each with its own seed and each charged. Pick between them by their `preview_url` |
+| `seed` | No | Seed of the first variant (the next ones count up from it). Send an animation's `seed` with the same prompt and options to generate it again |
+| `duration` | No | Length in seconds (0.67-10). Omit to let it be picked from the prompt; required when `augment_prompt` is `false` |
+| `loop` | No | A seamless cycle (a walk, a run, an idle), 2 to 8 seconds long. Omit to let it be picked from the prompt |
+| `start_idle` / `end_idle` | No | Start / end on the relaxed standing pose, so the animation chains after / into an idle. Not with `loop`. Omit to let it be picked from the prompt |
+| `left_hand` / `right_hand` | No | That hand's pose for the whole animation: `relaxed`, `fist`, `grip`, `open`, `flat`, `point`, `thumbs_up`, `pinch`, `v_sign` or `claw` (`grip` for a held weapon, `fist` for a punch). Only these poses exist; hand shapes described in the prompt are not read. Omit to let it be picked from the prompt |
+| `keep_facing` | No | Keep the character facing the same way, with no turning, which fixed-direction sprites need. Omit to let it be picked from the prompt (on unless turning is the point of the move) |
+| `augment_prompt` | No | Rewrite the prompt for the motion model and infer every option left out (default: true). `false` sends the prompt as written, so write it in the model's own format: one plain English sentence of under 50 words that starts with "A person" and describes only how the body moves, e.g. "A person swings a sword overhead with the right arm and steps forward on the left foot". Use `left_hand` / `right_hand` for hand shapes, and set `duration` |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+**Returns:** `animations`, one per variant, each with `id` (pass it as `animation_id`), `name`, `prompt`, `caption` (the description the motion model was given), `seed`, `duration`, `fps`, `loop`, `start_idle`, `end_idle`, `keep_facing`, `left_hand`, `right_hand`, `preview_url` (an mp4 of the move on a mannequin, seen from the low camera facing SW; it does not expire) and `created_at`. There is no GLB yet: `animate3DModelPreset` with the `animation_id` makes one for your model
+
+**Credits:** 0.5 per animation (one per `num_variants`). Credits are held for every variant asked; the final charge is for the animations that came back, and everything is refunded if the job fails or is cancelled
+
+---
+
+### My Animations (`listMyAnimations`)
+
+List your account's own animations, newest first: the ones generated with `createAnimation` or in the Ludo web app's My Animations. (Ludo's ready-made ones are in `listAnimationPresets`.) Animations do not expire, so call this before generating a move again: one made earlier, for another character or in the web app, can be reused as it is.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `limit` | No | How many animations to return, newest first (1-200, default: 50) |
+| `before` | No | Only animations created before this time (unix seconds): the `created_at` of the last animation of the previous call |
+
+**Returns:** `animations`, each with the `id` to pass as `animation_id`, its `name`, the `prompt` it was generated from, `duration`, `loop`, `preview_url` (an mp4 of the move on a mannequin) and `created_at`, the same fields as `createAnimation` returns
+
+**Credits:** Free
+
+---
+
 ### Animate 3D Model from Preset (`animate3DModelPreset`)
 
-Apply a curated animation preset to an **already-rigged** 3D model (retargeting). Unlike `animate3DModel`, the motion comes from a professionally curated clip library instead of a text prompt, so exactly **one** clip is returned. Any rig type can take a preset (rig the model first with `rigModel`, or `create3DModel` with `rig: true`), though retargeting does not succeed on every model; when it does not, the job returns an error. Any preset id from `listAnimationPresets` works.
+Apply a curated animation preset, or one of your generated animations, to an **already-rigged** 3D model (retargeting). Unlike `animate3DModel`, the motion comes from a professionally curated clip library (`listAnimationPresets`) or from an animation you made with `createAnimation`, so exactly **one** clip is returned. Any rig type can take a preset or an animation (rig the model first with `rigModel`, or `create3DModel` with `rig: true`), though retargeting does not succeed on every model; when it does not, the job returns an error. An animation that loops is trimmed to its seamless loop; a one-shot keeps its full arc.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `model` | Yes | URL or base64-encoded **rigged** GLB (any rig type) |
-| `preset_id` | Yes | id of a preset from `listAnimationPresets` |
-| `crop_loop` | No | Trim the animation to the span that loops seamlessly. Omit for Auto: cyclic motions (walk, idle) loop, one-shots (jump, cast) keep their full arc |
-| `in_place` | No | Remove the animation's net travel so the character moves on the spot, the treadmill clip a game engine expects, with the engine driving locomotion. Omit to follow `crop_loop` |
+| `preset_id` | No | id of a preset from `listAnimationPresets`; any preset id from that list works. Exactly one of `preset_id` and `animation_id` |
+| `animation_id` | No | id of one of your animations (from `createAnimation` or `listMyAnimations`), retargeted onto the model like a preset. Exactly one of `preset_id` and `animation_id`; an animation that is not on your account returns `404` |
+| `mirror` | No | Play the move on the other side, left and right swapped (a slash with the left arm from one with the right). Works with a preset and with an animation (default: false) |
+| `in_place` | No | Remove the animation's net travel so the character moves on the spot, the treadmill clip a game engine expects, with the engine driving locomotion. Omit to apply it to animations that loop: a cycle stays on the spot, a one-shot keeps its travel |
 | `request_id` | No | Optional client-provided identifier for this request |
 
-**Returns:** `animations`, the same envelope as `animate3DModel`, containing one clip with `clip_name`, `preset_id`, `glb_url` (animation-only GLB, joints named as on your model), `preview_url` (mp4), `seed`, `motion`, `fit_rmse`
+**Returns:** `animations`, the same envelope as `animate3DModel`, containing one clip with `clip_name`, `preset_id` (from a preset) or `animation_id` (from one of your animations), `mirror` (when mirrored), `glb_url` (animation-only GLB, joints named as on your model), `preview_url` (mp4), `seed`, `motion`, `fit_rmse`
 
 **Credits:** 0.5 per retarget
 **Processing time:** 30-90 seconds
@@ -420,7 +461,7 @@ Render a 3D model as styled sprites seen from up to 8 directions (where the came
 
 1. *(Optional)* A character image: `create3DModelImage` from a prompt, or your own image redrawn as a 3D render.
 2. A rigged model: `create3DModel` with that image and `rig: true` (or `rigModel` for a model you already have). Any rig type can take an animation preset, though retargeting does not succeed on every model.
-3. *(Optional)* An animation, at most one: a `preset_id` from `listAnimationPresets`, or an `animation_url` made for this model by `animate3DModelPreset` or `animate3DModel`. With none, the sprites are a still pose.
+3. *(Optional)* An animation, at most one: a `preset_id` from `listAnimationPresets`, an `animation_id` from `createAnimation` or `listMyAnimations`, or an `animation_url` made for this model by `animate3DModelPreset` or `animate3DModel`. `mirror` plays a preset or an animation on the other side. With none, the sprites are a still pose.
 4. *(Optional)* Accessories: `fitDirectionalAccessory` for each item (a sword, a shield, a helmet...), adjusted until it looks right, then `attachDirectionalAccessories` for one model holding them all. Use its `model_url` as `model` from here on.
 5. `listDirectionalSpriteStyles`: pick a look.
 6. `previewDirectionalSprites`: check it, free.
@@ -478,7 +519,8 @@ A few frames of the model in a style, from each direction asked for, to check a 
 | `model` | Yes | URL or base64-encoded GLB (rigged, to animate it) |
 | `animation_url` | No | An animation made for this model: the `glb_url` from `animate3DModel` or `animate3DModelPreset` (URL or base64) |
 | `preset_id` | No | A preset from `listAnimationPresets`, retargeted onto the model (any rig type can take one, though retargeting does not succeed on every model, and when it does not the call returns an error) |
-| `crop_loop` | No | With `preset_id`: trim the preset to the span that loops seamlessly |
+| `animation_id` | No | One of your animations (from `createAnimation` or `listMyAnimations`), retargeted onto the model like a preset. An animation that is not on your account returns `404` |
+| `mirror` | No | With `preset_id` or `animation_id`: play the move on the other side, left and right swapped. With any other animation, or none, it returns `400` (default: false) |
 | `model_animation` | No | The name of an animation the GLB itself carries |
 | `perspective` | No | `horizon`, `low`, `isometric` (default), `high`, `top` |
 | `directions` | No | Up to 8 of `S`, `SW`, `W`, `NW`, `N`, `NE`, `E`, `SE` (default: `["SW"]`) |
@@ -492,7 +534,7 @@ A few frames of the model in a style, from each direction asked for, to check a 
 | `gif` / `individual_frames` | No | Also return each sheet as a GIF / its frames as separate images |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-At most one of `animation_url`, `preset_id` and `model_animation`; with none, each sheet is a single frame.
+At most one of `animation_url`, `preset_id`, `animation_id` and `model_animation`; with none, each sheet is a single frame.
 
 **Returns:** `sheets`, one per direction in the order asked, each with `direction`, `spritesheet_url`, `video_url`, `num_frames`, `num_cols`, `num_rows`, `fps`, `render_3d`, and `gif_url` / `individual_frame_urls` when asked
 
@@ -586,7 +628,7 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 
 ### Animation Presets (`listAnimationPresets`)
 
-List available animation presets, used by `transferMotion` (onto a sprite) and `animate3DModelPreset` (onto a rigged 3D model). Returns preset animations, perspectives, and directions; no video URLs are exposed.
+List available animation presets, used by `transferMotion` (onto a sprite) and `animate3DModelPreset` (onto a rigged 3D model). Returns preset animations, perspectives, and directions; no video URLs are exposed. When no preset covers a move, generate one with `createAnimation`; your own animations are in `listMyAnimations`.
 
 **Returns:**
 - `animations`: Array of presets with `id`, `name`, `category`, `description`, `duration` and `preview_url`; any of them can be retargeted onto a rigged 3D model (`animate3DModelPreset`) or used as a Directional Sprites `preset_id`
@@ -599,15 +641,17 @@ List available animation presets, used by `transferMotion` (onto a sprite) and `
 
 ### Motion Transfer (`transferMotion`)
 
-Transfer motion from a video or animation preset onto a static sprite, producing an animated spritesheet. Use it when you want an exact motion copied - a standard walk or attack cycle from `listAnimationPresets`, or your own clip; use `animateSprite` to describe the motion in text instead.
+Transfer motion from a video, an animation preset or one of your generated animations onto a static sprite, producing an animated spritesheet. Use it when you want an exact motion copied - a standard walk or attack cycle from `listAnimationPresets`, a move you made with `createAnimation`, or your own clip; use `animateSprite` to describe the motion in text instead.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64-encoded sprite image |
-| `video` | No | URL of the video to use as motion source: the `video_url` of a spritesheet from `animateSprite`, or your own clip. Videos up to 4 seconds work best. Either `video` or `preset_id` + `perspective` + `direction` must be provided; when both are sent the video is used |
-| `preset_id` | No | ID of an animation preset to use instead of a video URL, from `listAnimationPresets`. When using a preset, `perspective` and `direction` are required |
-| `direction` | No | Facing direction for the preset, as a compass point: `N`, `NE`, `E`, `SE`, `S`, `SW`, `W`, `NW`. Required with a preset |
-| `perspective` | No | Camera perspective of the preset clip, the same set for every preset: `high` (tactical, steep top-down), `horizon` (side view at eye level), `isometric` (diagonal top-down with depth), `low` (hero, low angle), `top` (directly overhead). Required with a preset |
+| `video` | No | URL of the video to use as motion source: the `video_url` of a spritesheet from `animateSprite`, or your own clip. Videos up to 4 seconds work best. One of `video`, `preset_id` and `animation_id` must be provided (the last two with `perspective` + `direction`); when a video is sent with one of them, the preset or animation is used |
+| `preset_id` | No | ID of an animation preset to use instead of a video URL, from `listAnimationPresets`. When using a preset, `perspective` and `direction` are required. At most one of `preset_id` and `animation_id` |
+| `animation_id` | No | One of your animations (from `createAnimation` or `listMyAnimations`) to use instead of a video or a preset. An animation can be seen from any view, so `perspective` and `direction` are required, as with a preset: pick the view the sprite is drawn from. An animation that is not on your account returns `404` |
+| `mirror` | No | With `preset_id` or `animation_id`: play the move on the other side, left and right swapped (a slash with the left arm from one with the right). Not available with a `video`, where it returns `400` (default: false) |
+| `direction` | No | Where the camera stands around the character for the preset or animation, as a compass point: `N`, `NE`, `E`, `SE`, `S`, `SW`, `W`, `NW`. Required with a preset or an animation |
+| `perspective` | No | Camera perspective the preset or animation is seen from, the same set for every preset: `high` (tactical, steep top-down), `horizon` (side view at eye level), `isometric` (diagonal top-down with depth), `low` (hero, low angle), `top` (directly overhead). Required with a preset or an animation |
 | `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
 | `frame_size` | No | `0` (default, max resolution), `32`, `64`, `96`, `128`, `192`, `256`, `384` |
 | `loop` | No | Trim animation for a seamless loop (default: true) |
@@ -1060,6 +1104,10 @@ Create an idle breathing animation for this character sprite
 
 ```
 Rig this 3D character using Mixamo joint names, then apply a walk animation preset to it
+```
+
+```
+Generate an overhead sword slash animation, apply it to my rigged knight, and render it as directional sprites from SW and SE
 ```
 
 ```
