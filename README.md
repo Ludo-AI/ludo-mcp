@@ -130,7 +130,8 @@ Sprite animation, motion transfer, spritesheet editing and video generation take
 | `hydra` | Sprite animation, keyframes, motion transfer and spritesheet editing (the default for all four) | Most capable all-around model; its spritesheets come with a generated sound effect (`audio_url`, an mp3). 3 credits/s, shortest animation 3s (9 credits minimum) |
 | `griffin-hd` (Griffin) | Sprite animation, keyframes and spritesheet editing | Highest resolution and best image fidelity. Flat 10 credits per animation; up to 5s |
 | `ignis` | Sprite animation, keyframes and motion transfer | Cheapest model, for simple body shapes and simple actions; its spritesheets come with a generated sound effect (`audio_url`). On motion transfer it takes presets only (`preset_id`): a reference `video` fails. 1.5 credits/s on all three, 1s to 5s, no minimum charge |
-| `ignis-pixel` | Same actions as `ignis` | Same pricing as `ignis`; for low-res pixel-art sprites |
+| `ignis-pixel` | Sprite animation, keyframes and motion transfer | Same sprite pricing as `ignis`; for low-res pixel-art sprites |
+| `ignis` | Video generation (`createVideo`) | Budget videos with audio, 576p, for simple scenes and quick tests. 1 credit/s, 3s to 10s |
 | `griffin-hd` (Griffin) | Video generation, video from references and video editing (the default for all three) | Cinematic video in any style with a soundtrack, 720p. 2 credits/s on all three, 5s to 15s. Landscape and portrait output is too large for `upscaleVideo` |
 
 `forge` and `forge-pixel` are legacy since 2026-11-16 and will be retired on 2026-12-16: use `ignis` and `ignis-pixel` instead. Until then they keep running sprite animation and keyframes (1.5 credits/s), motion transfer and spritesheet editing (2 credits/s).
@@ -621,7 +622,7 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_url` on hydra and hydra-plus, `gif_url`, `num_frames`, `num_cols`, `num_rows`, `duration`, ...)
+**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_url` on hydra, hydra-plus and ignis, `gif_url`, `num_frames`, `num_cols`, `num_rows`, `duration`, ...)
 
 **Credits:** same as `animateSprite` - Hydra 3/sec (3s = 9); Griffin flat 10; Ignis / Ignis Pixel 1.5/sec, no minimum (1s = 1.5, 3s = 4.5, 4s = 6); legacy Hydra+ 4/sec (3s = 12)
 **Processing time:** 30-90 seconds
@@ -745,14 +746,14 @@ Generate short videos from a source image and a motion prompt (image-to-video). 
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64 starting frame |
 | `prompt` | Yes | Motion description (e.g., "camera zooms in", "character walks forward") |
-| `duration` | No | Default `5`s. Griffin HD: `5`–`15`s in 1s steps |
-| `model` | No | `griffin-hd` (default; 720p, with soundtrack). Legacy, avoid for new work: `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
+| `duration` | No | Default `5`s. Griffin HD: `5`–`15`s in 1s steps; Ignis: `3`–`10`s in 1s steps |
+| `model` | No | `griffin-hd` (default; 720p, with soundtrack), `ignis` (budget; 576p, with audio, for simple scenes). Legacy, avoid for new work: `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
 | `final_image` | No | Ending frame for interpolation |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `url`, `duration`, `has_audio`
 
-**Credits:** rate × seconds - Griffin HD: 2/sec (the default 5s = 10). Legacy: Blitz 1/sec, Eagle 1.3/sec, Eagle with Audio 1.8/sec.
+**Credits:** rate × seconds - Griffin HD: 2/sec (the default 5s = 10); Ignis: 1/sec (3s = 3, 10s = 10). Legacy: Blitz 1/sec, Eagle 1.3/sec, Eagle with Audio 1.8/sec.
 
 ---
 
