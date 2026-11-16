@@ -6,11 +6,11 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 
 | Category | Capabilities |
 |----------|-------------|
-| **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal, upscaling, pixel-art conversion |
+| **Images** | Sprites, icons, screenshots, backgrounds, UI assets, textures, background removal, upscaling, pixel-art conversion, normal maps |
 | **3D Models** | Character images ready for a 3D model (from a prompt, or your own image redrawn as a 3D render), convert 2D images to GLB models with PBR textures (prop or the more detailed hero model, rigged in the same call if you like), auto-rig models (skeleton + skin weights, engine-ready joint naming), text-driven skeletal animation, reusable animations generated from a text prompt and kept on your account, retarget curated animation presets or your own animations onto rigged models (mirrored if you like) |
 | **Directional Sprites** | Render a 3D model as styled sprites from up to 8 directions that line up, in looks from pixel art to painted to 3D render, animated with a preset, one of your generated animations or your own clip, holding fitted accessories (swords, shields, helmets...), previewed for free before you render |
-| **Animation** | Animated spritesheets from static sprites (4-64 frames), keyframe animation through up to three fixed frames, motion transfer from video, presets or your generated animations, spritesheet editing (re-prompt, outpaint, loop fixing, finer-detail re-render), free re-export with other sheet settings, sound effects for a spritesheet |
-| **Video** | Generate short videos from images or reference images (5-15 seconds, with a soundtrack), prompt-driven video editing, 2x upscaling |
+| **Animation** | Animated spritesheets from static sprites (4-64 frames), keyframe animation through up to three fixed frames, motion transfer from video, presets or your generated animations, spritesheet editing (re-prompt, outpaint, loop fixing, finer-detail re-render), the same animation re-rendered from a new view, free re-export with other sheet settings, sound effects for a spritesheet |
+| **Video** | Generate short videos from images or reference images (5-15 seconds on Griffin, 3-10 on Ignis, with audio), prompt-driven video editing, 2x upscaling |
 | **Audio** | Sound effects, background music, character voices, TTS |
 | **Jobs & History** | Async job queue: submit, poll or long-poll, list and cancel jobs (queued jobs refund their credits), plus paginated generation history across the API and the web app |
 | **Account** | Credit balance, plan and auto top-up settings, to check before an expensive generation; plans, prices and what each call costs |
@@ -132,7 +132,7 @@ Sprite animation, motion transfer, spritesheet editing and video generation take
 | `ignis` | Sprite animation, keyframes and motion transfer | Cheapest model, for simple body shapes and simple actions; its spritesheets come with a generated sound effect (`audio_url`). On motion transfer it takes presets only (`preset_id`): a reference `video` fails. 1.5 credits/s on all three, 1s to 5s, no minimum charge |
 | `ignis-pixel` | Sprite animation, keyframes and motion transfer | Same sprite pricing as `ignis`; for low-res pixel-art sprites |
 | `ignis` | Video generation (`createVideo`) | Budget videos with audio, 576p, for simple scenes and quick tests. 1 credit/s, 3s to 10s |
-| `griffin-hd` (Griffin) | Video generation, video from references and video editing (the default for all three) | Cinematic video in any style with a soundtrack, 720p. 2 credits/s on all three, 5s to 15s. Landscape and portrait output is too large for `upscaleVideo` |
+| `griffin-hd` (Griffin) | Video generation, video from references and video editing (the default for all three) | Cinematic video in any style with a soundtrack, 768p. 2 credits/s on all three, 5s to 15s. Landscape and portrait output is too large for `upscaleVideo` |
 
 `forge` and `forge-pixel` are legacy since 2026-11-16 and will be retired on 2026-12-16: use `ignis` and `ignis-pixel` instead. Until then they keep running sprite animation and keyframes (1.5 credits/s), motion transfer and spritesheet editing (2 credits/s).
 
@@ -168,7 +168,7 @@ Call it with no parameters to get a table of contents, then again with `doc` (an
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `doc` | No | Document to read. Omit for the table of contents. One of `assistant`, `game-ideator`, `image-generator`, `project`, `account`, `faq`, `3d-generator`, `video-generator`, `sprite-generator`, `audio-generator`, `api-mcp`, `game-asset-generation` |
+| `doc` | No | Document to read. Omit for the table of contents. One of `assistant`, `game-ideator`, `image-generator`, `project`, `account`, `faq`, `3d-generator`, `video-generator`, `sprite-generator`, `audio-generator`, `api-mcp`, `game-asset-generation`, `directional-sprites`, `asset-toolbox` |
 | `sections` | No | Section titles to return from `doc`, matched ignoring case, spacing and punctuation. Only valid together with `doc` |
 
 **Returns:**
@@ -190,11 +190,13 @@ Generate sprites, icons, backgrounds, UI assets, and textures from a text prompt
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `prompt` | Yes | Detailed description of the image |
-| `image_type` | Yes | `sprite`, `icon`, `screenshot`, `art`, `asset`, `sprite-vfx`, `ui_asset`, `fixed_background`, `side_scrolling_background`, `texture`, `horizontal_tile`, `tile`, `item-icon`, `portrait`, `card-art`, `splash`, `3d`, `generic` |
-| `art_style` | No | `8-Bit`, `16-Bit`, `32-Bit`, `Hi-Bit`, `Low Poly`, `Stylized 3D`, `Voxel Art`, `Flat Design`, `Anime/Manga`, `Western Cartoon`, `Hand-Painted`, `Photorealistic 3D`, `Cel-Shaded`, etc. |
+| `image_type` | Yes | `sprite`, `icon`, `screenshot`, `art`, `asset`, `sprite-vfx`, `sprite-tiling-horizontal`, `sprite-tiling-vertical`, `scatter-pattern`, `logo`, `ui_asset`, `fixed_background`, `side_scrolling_background`, `vertical_scrolling_background`, `parallax_layer`, `texture`, `tile`, `item-icon`, `portrait`, `card-art`, `splash`, `3d`, `generic` |
+| `art_style` | No | `Micro Pixel`, `8-Bit Pixel`, `16-Bit Pixel`, `32-Bit Pixel`, `Free Pixel`, `Low Poly`, `Stylized 3D`, `Voxel Art`, `Flat Design`, `Anime`, `Western Cartoon`, `Hand-Painted`, `Photorealistic 3D`, `Cel-Shaded`, etc. |
 | `perspective` | No | `Side-Scroll`, `Top-Down`, `Isometric`, `First-Person`, `Third-Person`, `2.5D` |
-| `aspect_ratio` | No | `default`, `ar_1_1`, `ar_4_3`, `ar_16_9`, `ar_9_16` |
+| `aspect_ratio` | No | `default`, `ar_1_1`, `ar_4_3`, `ar_16_9`, `ar_19_9`, `ar_3_4`, `ar_9_16`, `ar_9_19` |
 | `n` | No | Number of variations (1-8, default: 1) |
+| `augment_prompt` | No | Augment the prompt behind the scenes (default: true) |
+| `save_normals` | No | Also make a normal map of each image, for 2.5D lighting, returned as `normal_map_url` (default: false). Free |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Credits:** 0.5 per image
@@ -208,12 +210,16 @@ Modify an existing image using text instructions (smart editing).
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `image` | Yes | URL or base64-encoded image to edit |
-| `prompt` | Yes | Description of changes (e.g., "remove the background", "make it darker", "add clouds to the sky") |
-| `reference_image` | No | URL or base64 reference image for style/content guidance |
+| `prompt` | No* | Description of changes (e.g., "remove the background", "make it darker", "add clouds to the sky"). *Required, except with `mask_mode` `erase`. With a mask, describe what should fill the masked area |
+| `reference_image` | No | URL or base64 reference image for style/content guidance. Not used with `mask_mode` `erase` |
+| `mask` | No | URL or base64-encoded PNG that limits the edit to one area of the image: white marks the area to change, black the area to keep. It must be exactly the same width and height as `image`, or the call returns 400. Without a mask the whole image is re-rendered. A masked edit costs more (see Credits) |
+| `mask_mode` | No | Only with `mask`. `replace` (default) redraws the masked area from `prompt`; `erase` removes what is in the masked area and takes no prompt |
+| `image_type` | No | What kind of image the source is: `sprite`, `icon`, `screenshot`, `art`, `asset`, `sprite-vfx`, `sprite-tiling-horizontal`, `sprite-tiling-vertical`, `scatter-pattern`, `logo`, `ui_asset`, `fixed_background`, `side_scrolling_background`, `vertical_scrolling_background`, `parallax_layer`, `texture`, `tile`, `item-icon`, `portrait`, `card-art`, `splash`, `3d`, `generic`. Not needed when `image` is the URL of an image you generated on Ludo in the last 30 days, which keeps its own type. Set it for an upload or a link from elsewhere, so a sprite is edited as a sprite and keeps its transparent background |
 | `n` | No | Number of variations (1-4, default: 1) |
+| `save_normals` | No | Also make a normal map of each image, for 2.5D lighting, returned as `normal_map_url` (default: false). Free |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Credits:** 0.5 per image
+**Credits:** 0.5 per image; 1 per image with a mask
 
 ---
 
@@ -225,8 +231,11 @@ Generate new content while maintaining the visual style of a reference image.
 |-----------|----------|-------------|
 | `style_image` | Yes | URL or base64-encoded reference image for style matching |
 | `prompt` | Yes | Description of what to generate (e.g., "a warrior character", "a treasure chest") |
-| `image_type` | Yes | `sprite`, `icon`, `screenshot`, `art`, `asset`, `sprite-vfx`, `ui_asset`, `fixed_background`, `texture`, `3d`, `generic` |
+| `image_type` | No | `sprite` (default), `icon`, `screenshot`, `art`, `asset`, `sprite-vfx`, `sprite-tiling-horizontal`, `sprite-tiling-vertical`, `scatter-pattern`, `logo`, `ui_asset`, `fixed_background`, `side_scrolling_background`, `vertical_scrolling_background`, `parallax_layer`, `texture`, `tile`, `item-icon`, `portrait`, `card-art`, `splash`, `3d`, `generic` |
+| `aspect_ratio` | No | `default`, `ar_1_1`, `ar_4_3`, `ar_16_9`, `ar_19_9`, `ar_3_4`, `ar_9_16`, `ar_9_19`. The shape of `style_image` is not carried over, so set this when the output needs a particular shape |
 | `n` | No | Number of variations (1-4, default: 1) |
+| `augment_prompt` | No | Augment the prompt behind the scenes (default: true) |
+| `save_normals` | No | Also make a normal map of each image, for 2.5D lighting, returned as `normal_map_url` (default: false). Free |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Credits:** 0.5 per image
@@ -243,6 +252,7 @@ Generate a new pose for an existing sprite. **Use this BEFORE `animateSprite`** 
 | `pose` | Yes | Target pose: `Idle (Front)`, `Idle (Back)`, `Idle (Left Facing)`, `Idle (Right Facing)`, `Walk (Left)`, `Walk (Right)`, `Run (Left)`, `Run (Right)`, `Crouching`, `Crawling`, `Sitting`, `Attack Ready`, `Jump Preparation`, `Defending / Blocking`, `Flying`, `Sleeping`, or `Other` (with a free-text `description`) |
 | `description` | No | Additional instructions to guide pose generation |
 | `n` | No | Number of variations (1-4, default: 1) |
+| `save_normals` | No | Also make a normal map of each image, for 2.5D lighting, returned as `normal_map_url` (default: false). Free |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `url`, `pose`, `motion_prompt`
@@ -265,6 +275,7 @@ Rotate the camera view of an existing sprite to a new angle, keeping the same ch
 | `camera_rotation` | Yes | Camera azimuth in degrees: `0` (front), `45` (front-right), `90` (right side), `135` (back-right), `180` (back), `-135` (back-left), `-90` (left side), `-45` (front-left) |
 | `camera_elevation` | No | Camera tilt in degrees: `0` (eye-level), `30` (elevated), `60` (high-angle). Omit to keep the sprite's current elevation. |
 | `n` | No | Number of variations (1-4, default: 1) |
+| `save_normals` | No | Also make a normal map of each image, for 2.5D lighting, returned as `normal_map_url` (default: false). Free |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `url`, `camera_rotation`, `camera_elevation`
@@ -315,6 +326,19 @@ Any art, broken AI pixel art or pixel art comes back as pixel art at about the i
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `url`, `pixel_size` (yours, or the detected one, which can be fractional), and `columns` / `rows`, the art's size in pixel-art pixels: resize to columns x rows with nearest-neighbour for one image pixel per art pixel
+
+**Credits:** Free (20 calls per 5 minutes, 120 an hour, 1,000 a day)
+
+### Normal Map (`createNormalMap`)
+
+Make the normal map of an image, for 2.5D lighting: a lossless WebP of the same size and alpha as the image (transparent pixels are flat), in the OpenGL convention (red = right, green = up, blue = towards the viewer; Unity and Godot read it as is, Unreal expects green flipped). Pixel art gets one normal per art pixel, and the map of a seamless tile tiles the same way. To get maps with new images or spritesheets, pass `save_normals: true` to the generation instead.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `image` | Yes | URL or base64-encoded image, opaque or a cut-out, up to 15MB. An image you generated on Ludo in the last 30 days, given by its URL, is read with its type and pixel grid; for any other image pixel art is detected |
+| `request_id` | No | Optional client-provided identifier for this request |
+
+**Returns:** `url` (the image the map was made from) and `normal_map_url`
 
 **Credits:** Free (20 calls per 5 minutes, 120 an hour, 1,000 a day)
 
@@ -502,6 +526,7 @@ Put up to 8 items on the model, each at the `placement` `fitDirectionalAccessory
 | `model` | Yes | The rigged model, URL or base64 GLB, up to 30MB. The URL of one of your 3D models also saves the items on it |
 | `items` | Yes | Every item the model holds: `item` (URL or base64 GLB, as sent to the fit), `name`, and `placement` or the adjustments above |
 | `save_on_model` | No | `false` only builds the GLB, without saving the items on your model |
+| `keep_saved` | No | When the model is one of your 3D models, keep the items it already has saved, except those held by a bone one of these items takes, and put them in the GLB too (listed in `kept`) (default: true). `false` replaces them all with these items |
 
 **Returns:** `model_url` (one GLB of the model holding every item, kept 7 days: pass it as `model` to `previewDirectionalSprites`, `createDirectionalSprites` or `createDirectionalStills`), `saved` (whether the items were saved on your model, which replaces its previous items and shows them in the Ludo web app's Directional Sprites) and `items`
 
@@ -535,6 +560,7 @@ A few frames of the model in a style, from each direction asked for, to check a 
 | `loop` | No | Sample the animation as a seamless loop; omit to follow the animation |
 | `keep_horizontal_travel` / `keep_vertical_travel` | No | Keep the animation's ground travel (default: off) / its vertical motion (default: on) |
 | `gif` / `individual_frames` | No | Also return each sheet as a GIF / its frames as separate images |
+| `save_normals` | No | Also make a normal map of each sheet, for 2.5D lighting, returned as its `normal_map_url` (default: false): the 3D model's own surface normals on the same pixels. 0.5 credits per map on top of the render; a map that could not be made is not charged |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 At most one of `animation_url`, `preset_id`, `animation_id` and `model_animation`; with none, each sheet is a single frame.
@@ -545,7 +571,7 @@ At most one of `animation_url`, `preset_id`, `animation_id` and `model_animation
 
 #### `createDirectionalStills`
 
-The model as it is, one large transparent sprite image per direction, ready for `animateSprite` or `editImage`. Takes `model`, `perspective`, `directions`, `style_id`, `style_params`, `style_version` and `request_id` as above.
+The model as it is, one large transparent sprite image per direction, ready for `animateSprite` or `editImage`. Takes `model`, `perspective`, `directions`, `style_id`, `style_params`, `style_version`, `save_normals` (free here) and `request_id` as above.
 
 **Returns:** `images`, one per direction, each with `direction`, `url`, `width`, `height` and `render_3d`
 
@@ -561,7 +587,7 @@ Create animated spritesheets from static images. Use this when you can describe 
 |-----------|----------|-------------|
 | `initial_image` | Yes | URL or base64 of the starting frame |
 | `motion_prompt` | Yes | Animation description (e.g., "walking", "idle breathing", "attack slash", "casting a fireball with both hands"). See [Writing the motion prompt](#writing-the-motion-prompt) |
-| `image_type` | No | `sprite` (default), `sprite-vfx`, `ui_asset` |
+| `image_type` | No | `sprite` (default), `sprite-vfx`, `item-icon`, `ui_asset`, `logo`, `sprite-tiling-horizontal`, `sprite-tiling-vertical`, `scatter-pattern`, `parallax_layer`, `tile`, `texture`, `portrait`, `card-art` |
 | `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
 | `frame_size` | No | `0` (default, max resolution), `32`, `64`, `96`, `128`, `192`, `256`, `384`, `-1` (AI 1.5× upscale), `-9` (match input frame) |
 | `loop` | No | Seamless loop (default: true) |
@@ -577,6 +603,8 @@ Create animated spritesheets from static images. Use this when you can describe 
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
+| `use_pixel_grid` | No | Use the animation's pixel grid when one is detected (default: true). `false` always packs as ordinary art, for when the detected grid is wrong for the asset |
+| `save_normals` | No | Also make a normal map of the spritesheet, for 2.5D lighting, returned as `normal_map_url` (default: false). 0.5 credits per map on top of the generation; a map that could not be made is not charged |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `spritesheet_url` (the sheet), `video_url` (an mp4 of the animation - pass it to `transferMotion` as `video` or to `createSpriteAudio` as `spritesheet_video_url`), `audio_url` (hydra, hydra-plus and ignis: URL of a generated sound effect (mp3), so there is no need to call `createSpriteAudio`), `num_frames`, `num_cols`, `num_rows`, `duration` (seconds, to play the sheet at its real speed), and when requested `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`
@@ -601,11 +629,11 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `initial_image` | No* | URL or base64 of the first keyframe. *At least one of `initial_image` or `middle_image` is required (a `final_image` alone is rejected) |
-| `middle_image` | No* | URL or base64 of the middle keyframe the animation passes through |
+| `initial_image` | Yes | URL or base64 of the first keyframe; the animation starts from it |
+| `middle_image` | No | URL or base64 of the middle keyframe the animation passes through |
 | `final_image` | No | URL or base64 of the final keyframe |
 | `motion_prompt` | No | Optional animation description (e.g., "attack slash"); without it the keyframes drive the motion. See [Writing the motion prompt](#writing-the-motion-prompt) |
-| `image_type` | No | `sprite` (default), `sprite-vfx`, `ui_asset` |
+| `image_type` | No | `sprite` (default), `sprite-vfx`, `item-icon`, `ui_asset`, `logo`, `sprite-tiling-horizontal`, `sprite-tiling-vertical`, `scatter-pattern`, `parallax_layer`, `tile`, `texture`, `portrait`, `card-art` |
 | `model` | No | `hydra` (default; generates audio), `griffin-hd` (Griffin: highest resolution and best image fidelity), `ignis`, or `ignis-pixel` for pixel-art sprites. Legacy: `forge`, `forge-pixel`, `hydra-plus` |
 | `frames` | No | `4`, `9`, `16`, `25`, `36` (default), `49`, `64` |
 | `frame_size` | No | `0` (default, max resolution), `32`, `64`, `96`, `128`, `192`, `256`, `384`, `-1` (AI 1.5× upscale), `-9` (match input frame) |
@@ -620,6 +648,8 @@ Animate a sprite through up to three fixed keyframes (`initial_image`, `middle_i
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
+| `use_pixel_grid` | No | Use the animation's pixel grid when one is detected (default: true). `false` always packs as ordinary art, for when the detected grid is wrong for the asset |
+| `save_normals` | No | Also make a normal map of the spritesheet, for 2.5D lighting, returned as `normal_map_url` (default: false). 0.5 credits per map on top of the generation; a map that could not be made is not charged |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_url` on hydra, hydra-plus and ignis, `gif_url`, `num_frames`, `num_cols`, `num_rows`, `duration`, ...)
@@ -666,8 +696,11 @@ Transfer motion from a video, an animation preset or one of your generated anima
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact, before background removal (default: false) |
+| `use_pixel_grid` | No | Use the animation's pixel grid when one is detected (default: true). `false` always packs as ordinary art, for when the detected grid is wrong for the asset |
 | `model` | No | `hydra` (default; most capable, generates audio), `ignis` (cheapest; for simple motion, presets only - a reference `video` fails), `ignis-pixel` (pixel art). Legacy, avoid for new work: `forge`, `forge-pixel`, `tango` |
 | `duration` | No | Animation length in seconds. Omitted, it is 1.5 where the model offers it and otherwise the model's shortest, so 3s on `hydra` (the default). Hydra: `3`–`5`s in 0.5 steps; Ignis / Ignis Pixel: `1`–`5`s. A longer reference clip or preset is compressed to fit, so pass the preset's own `duration` to keep its timing |
+| `prompt` | No | Optional extra instructions for the motion transfer (e.g. "keep the cape still") |
+| `save_normals` | No | Also make a normal map of the spritesheet, for 2.5D lighting, returned as `normal_map_url` (default: false). 0.5 credits per map on top of the generation; a map that could not be made is not charged |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `audio_url` on hydra, `gif_url`, `individual_frame_urls`, `spritesheet_with_background_url`, `individual_frame_with_background_urls`, `num_frames`, `num_cols`, `num_rows`, `duration`)
@@ -695,11 +728,40 @@ Edit a spritesheet you previously generated: re-prompt its animation, outpaint b
 | `gif` | No | Generate an animated GIF (default: false) |
 | `individual_frames` | No | Extract individual frame images (default: false) |
 | `spritesheet_with_background` | No | Also return the spritesheet with background intact (default: false) |
+| `use_pixel_grid` | No | `false` always packs as ordinary art, for when the detected pixel grid is wrong for the asset. Omit to keep the source spritesheet's setting |
+| `save_normals` | No | Also make a normal map of the spritesheet, for 2.5D lighting, returned as `normal_map_url` (default: false). 0.5 credits per map on top of the generation; a map that could not be made is not charged |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...). New audio is generated only by `prompt` edits on hydra; `fix_loop`, `outpaint` and `improve` keep the source spritesheet's `audio_url` when it had one
 
 **Credits:** `fix_loop`, `outpaint` and `improve`: flat 1 credit per second of output, held for and capped at the source spritesheet's video length, no minimum, model ignored (a 3s sheet = 3, whatever `duration` you pass). `prompt` edits: per model - Hydra 3/sec (3s = 9), Griffin flat 10, legacy Forge / Forge Pixel 2/sec, no minimum (3s = 6)
+
+### Rotate Spritesheet (`rotateSpritesheet`)
+
+Re-render a spritesheet you previously generated from a new view: the same motion and timing, seen from a different angle (e.g. a front-facing walk cycle turned into the same walk seen from the back). Pass back the `spritesheet_url` you received from `animateSprite`, `animateSpriteKeyframes`, `transferMotion`, `editSpritesheet` or an earlier call; it must be a spritesheet you generated in the last 7 days (external URLs are not accepted). The animation covers the source's own length (up to 5 seconds; a longer source is sped up to fit), so omit `duration` unless you need to change that.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `spritesheet_url` | Yes | URL of a spritesheet you generated in the last 7 days |
+| `image` | Yes | The character exactly as it must appear in the new view (URL or base64). It becomes the first frame of the animation. `rotateSprite` on the animation's first frame (or any image of the character) produces one |
+| `final_image` | No | Exact last frame (URL or base64). Defaults to the first frame, for cyclic or returning animations |
+| `prompt` | No | Optional instructions: the character's facing in the new view ("its back to the camera"), where the action goes ("the kick goes to the left of the frame"), or anything else about the motion |
+| `duration` | No | Length in seconds: `3`-`5` in 0.5 steps. Omit to cover the source's own length |
+| `model` | No | `hydra` (default). Legacy: `hydra-plus` |
+| `loop` | No | Trim animation for a seamless loop. Omit to keep the source's setting |
+| `crop` | No | Crop frames to fit content (default: true) |
+| `frames` | No | Frames in the output spritesheet: `4`, `9`, `16`, `25`, `36`, `49`, `64`. Omit to keep the source's frame count |
+| `frame_size` | No | Sprite size in pixels: `32`, `64`, `96`, `128`, `192`, `256`, `384`, or `0` for max resolution. Omit to keep the source's setting |
+| `gif` | No | Generate an animated GIF (default: false) |
+| `individual_frames` | No | Extract individual frame images (default: false) |
+| `spritesheet_with_background` | No | Also return the spritesheet with background intact (default: false) |
+| `use_pixel_grid` | No | `false` always packs as ordinary art, for when the detected pixel grid is wrong for the asset. Omit to keep the source spritesheet's setting |
+| `save_normals` | No | Also make a normal map of the spritesheet, for 2.5D lighting, returned as `normal_map_url` (default: false). 0.5 credits per map on top of the generation; a map that could not be made is not charged |
+| `request_id` | No | Client-provided ID to retrieve results later |
+
+**Returns:** same shape as `animateSprite` (`spritesheet_url`, `video_url`, `gif_url`, `num_frames`, `num_cols`, `num_rows`, ...)
+
+**Credits:** rate × seconds - Hydra 3/sec (shortest 3s, so 9 minimum); legacy Hydra+ 4/sec (shortest 3s, so 12 minimum). Credits are held for the source's length, or for 3 seconds when it is shorter; the final charge is the rate × seconds of video generated, never more than was held
 
 ### Adjust Spritesheet (`adjustSpritesheet`)
 
@@ -714,6 +776,7 @@ Re-export a spritesheet you generated through the API in the last 7 days with di
 | `crop` | No | Crop frames to their content (ignored with True Size) |
 | `use_pixel_grid` | No | `false` packs as ordinary art when the detected pixel grid is wrong for the asset |
 | `gif` / `individual_frames` / `spritesheet_with_background` | No | Extra outputs, as on `animateSprite` |
+| `save_normals` | No | Also make a normal map of the new spritesheet, returned as `normal_map_url` (default: false). Adjusting is free, but the map costs 0.5 credits; a map that could not be made is not charged |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** same shape as `animateSprite`, with the source's `audio_url` when it had one. The source is left as it is
@@ -747,8 +810,9 @@ Generate short videos from a source image and a motion prompt (image-to-video). 
 | `image` | Yes | URL or base64 starting frame |
 | `prompt` | Yes | Motion description (e.g., "camera zooms in", "character walks forward") |
 | `duration` | No | Default `5`s. Griffin HD: `5`–`15`s in 1s steps; Ignis: `3`–`10`s in 1s steps |
-| `model` | No | `griffin-hd` (default; 720p, with soundtrack), `ignis` (budget; 576p, with audio, for simple scenes). Legacy, avoid for new work: `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
+| `model` | No | `griffin-hd` (default; 768p, with soundtrack), `ignis` (budget; 576p, with audio, for simple scenes). Legacy, avoid for new work: `blitz`, `eagle`, `eagle-audio` (alias `standard`→`blitz`) |
 | `final_image` | No | Ending frame for interpolation |
+| `augment_prompt` | No | Augment the prompt behind the scenes (default: true) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `url`, `duration`, `has_audio`
@@ -766,7 +830,7 @@ Generate a video from 1-5 reference images and a text prompt. Unlike `createVide
 | `prompt` | Yes | Text description of the video to generate |
 | `images` | Yes | 1 to 5 reference images (URL or base64) |
 | `duration` | No | Video length in seconds: `5`–`15` (default 5) |
-| `model` | No | `griffin-hd` (default; 720p, with soundtrack). Legacy, avoid for new work: `eagle`, `eagle-audio` |
+| `model` | No | `griffin-hd` (default; 768p, with soundtrack). Legacy, avoid for new work: `eagle`, `eagle-audio` |
 | `aspect_ratio` | No | `default` (model chooses), `ar_1_1`, `ar_16_9`, `ar_9_16`, `ar_4_3`, `ar_3_4`, `ar_21_9` |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
@@ -786,7 +850,7 @@ Edit a video you previously generated with a text prompt and optional reference 
 | `prompt` | Yes | Edit instruction describing the desired change |
 | `images` | No | Up to 5 reference images (URL or base64) to guide the edit |
 | `duration` | No | Output length in seconds: `5`–`15`. Omit to keep the source video's duration |
-| `model` | No | `griffin-hd` (default; 720p, with soundtrack). Legacy, avoid for new work: `eagle` |
+| `model` | No | `griffin-hd` (default; 768p, with soundtrack). Legacy, avoid for new work: `eagle` |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Returns:** `url`, `duration`, `has_audio`
@@ -797,7 +861,7 @@ Edit a video you previously generated with a text prompt and optional reference 
 
 ### Upscale Video (`upscaleVideo`)
 
-Upscale a video you previously generated to twice its resolution (2x). Pass back the `url` you received from `createVideo`, `createVideoFromReferences`, or `editVideo`; it must be a video you generated in the last 7 days (external URLs are not accepted). Both dimensions of the source must be under 960 pixels: `griffin-hd` (720p) landscape and portrait output is larger than that, so a current-model video qualifies only when it is square. A too-large source fails the job and the held credits are refunded.
+Upscale a video you previously generated to twice its resolution (2x). Pass back the `url` you received from `createVideo`, `createVideoFromReferences`, or `editVideo`; it must be a video you generated in the last 7 days (external URLs are not accepted). Both dimensions of the source must be under 960 pixels: `griffin-hd` (768p) landscape and portrait output is larger than that, so a current-model video qualifies only when it is square. A too-large source fails the job and the held credits are refunded.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -818,6 +882,8 @@ Generate game sound effects from text descriptions.
 |-----------|----------|-------------|
 | `description` | Yes | Sound description (e.g., "laser gun firing", "footsteps on gravel", "coin pickup") |
 | `duration` | No | 0-10 seconds (0 = automatic) |
+| `loop` | No | Generate a sound effect that loops seamlessly (default: false) |
+| `augment_prompt` | No | Augment the prompt behind the scenes (default: true) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Credits:** 2 per sound
@@ -848,6 +914,9 @@ Generate background music and themes.
 |-----------|----------|-------------|
 | `description` | Yes | Music description (e.g., "epic orchestral battle theme", "calm piano melody", "8-bit chiptune") |
 | `lyrics` | No | Optional lyrics for vocal tracks |
+| `duration` | No | Duration in seconds: `0` (default, automatic, based on the description) or `10`-`180` in steps of 10 |
+| `loop` | No | Generate music that loops seamlessly (default: false) |
+| `augment_prompt` | No | Augment the prompt behind the scenes (default: true) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
 **Credits:** 3 per track
@@ -864,6 +933,7 @@ Remix or transform an existing audio sample using a text prompt.
 | `prompt` | Yes | Description guiding the remix (e.g., "make it sound like an 80s synthwave track") |
 | `duration` | No | Duration in seconds: `0` (automatic, matches the source) or `10`–`180` in steps of 10 |
 | `modification_strength` | No | How strongly the source is modified, 0–1 (default: 0.6; 0 = close to original) |
+| `loop` | No | Generate a remix that loops seamlessly (default: false) |
 | `augment_prompt` | No | Augment the prompt behind the scenes (default: true) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
@@ -877,12 +947,14 @@ Generate unique character voices.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `voice_description` | Yes | Character description (e.g., "gruff old warrior", "cheerful young girl") |
-| `text` | Yes | Text to speak (max 200 characters) |
+| `voice_description` | No* | Character description (e.g., "gruff old warrior", "cheerful young girl"). *Required unless `image` is given; with an image, a few words of hints |
+| `image` | No | URL or base64-encoded image of the speaking character (concept art, at most 15MB). The voice is designed from it, and `voice_description` becomes optional |
+| `text` | Yes | Text to speak (max 100 characters) |
 | `type` | No | `human` (default) or `non-human` |
+| `augment_prompt` | No | Augment the prompt behind the scenes (default: true) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Credits:** 1 per voice
+**Credits:** 2 per voice
 
 ---
 
@@ -892,11 +964,12 @@ Clone a voice from an audio sample.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `text` | Yes | Text to speak (max 1000 characters) |
+| `text` | Yes | Text to speak (max 250 characters) |
 | `sample` | Yes | URL or base64 audio sample for voice cloning |
+| `delivery` | No | How the line is said, e.g. "angry, shouting" or "whispering, out of breath" (max 50 characters) |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
-**Credits:** 1 per generation
+**Credits:** 2 per generation
 
 ---
 
@@ -906,9 +979,10 @@ Use preset voices for text-to-speech.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `text` | Yes | Text to speak (max 1000 characters) |
+| `text` | Yes | Text to speak (max 250 characters) |
 | `voice_preset_id` | Yes | `Serious woman`, `Wise woman`, `Calm woman`, `Patient man`, `Determined man`, `Deep voice man`, `Teen boy`, `Sweet girl`, etc. |
-| `emotion` | No | `Default`, `Happy`, `Sad`, `Angry`, `Fearful`, `Surprised`, `Neutral` |
+| `emotion` | No | `Default`, `Happy`, `Sad`, `Angry`, `Fearful`, `Disgusted`, `Surprised`, `Neutral`. Only for the descriptive voices (e.g. `Serious woman`); a first-name voice returns HTTP 400 for any emotion other than `Default` |
+| `delivery` | No | How the line is said, e.g. "angry, shouting" or "whispering, out of breath" (max 50 characters). Only for the first-name voices (e.g. `Rachel`); a descriptive voice returns HTTP 400 - use `emotion` instead |
 | `language` | No | `auto`, `English`, `Spanish`, `French`, `German`, `Japanese`, `Korean`, etc. |
 | `request_id` | No | Client-provided ID to retrieve results later |
 
@@ -1015,7 +1089,8 @@ Report a problem with the Ludo API itself to the Ludo team. Use it only for API 
 | `category` | Yes | `bug`, `limitation`, `feature_request`, `praise` or `other`. Generated content that looks wrong is a model limitation, not a bug: do not report it |
 | `message` | Yes | What you were trying to do, what happened, and what would have helped (up to 4,000 characters) |
 | `operation` | No | The tool the feedback is about, e.g. `animateSprite` |
-| `job_id` | No | The job it is about, when there is one |
+| `job_id` | No | The job it is about, when there is one. Same as a one-item `job_ids` |
+| `job_ids` | No | The ids of the jobs it is about (up to 10): every job that shows the problem, plus the one that worked if you are comparing |
 | `agent` | No | The agent or app sending it, e.g. `Claude Code` |
 
 **Returns:** `ok` and the report's `id`

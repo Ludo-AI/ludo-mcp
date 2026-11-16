@@ -31,7 +31,7 @@
         {
           "name": "Generate a Pixel Art Sprite",
           "description": "Character sprite in a chosen style",
-          "note": "createImage with image_type='sprite', art_style='16-Bit', perspective='Side-Scroll'"
+          "note": "createImage with image_type='sprite', art_style='16-Bit Pixel', perspective='Side-Scroll'"
         },
         {
           "name": "Animate a Sprite",
