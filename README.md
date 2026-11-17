@@ -716,7 +716,7 @@ Edit a spritesheet you previously generated: re-prompt its animation, outpaint b
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `spritesheet_url` | Yes | URL of a spritesheet you generated in the last 7 days |
-| `edit_mode` | No | `prompt` (default), re-prompt the animation; `outpaint`, extend beyond the frame; `fix_loop`, repair a bad loop; `improve`, re-render with finer detail (the extra pass `hydra-plus` runs when it generates). `improve` takes only a spritesheet generated with `hydra`: any other source returns 400, including an already improved sheet or a loop fix or outpaint of one |
+| `edit_mode` | No | `prompt` (default), re-prompt the animation; `outpaint`, extend beyond the frame; `fix_loop`, repair a bad loop: it regenerates only the seam (the other frames look the same but are not bit-identical), so run it only on a spritesheet whose result had `bad_loop` true, and keep the source if the new seam is worse; `improve`, re-render with finer detail (the extra pass `hydra-plus` runs when it generates). `improve` takes only a spritesheet generated with `hydra`: any other source returns 400, including an already improved sheet or a loop fix or outpaint of one |
 | `prompt` | No | Edit instruction. Required for `prompt` mode, optional for `outpaint`, not accepted for `fix_loop` or `improve` |
 | `images` | No | Up to 5 reference images (URL or base64) to guide the edit |
 | `duration` | No | Output length in seconds (per model, as on `animateSprite`). Omit to keep the source spritesheet's duration. It does not change the price of `fix_loop`, `outpaint` or `improve`, which bill the source spritesheet's video length |
