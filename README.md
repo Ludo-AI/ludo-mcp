@@ -13,7 +13,7 @@ Generate game assets using AI through the [Model Context Protocol (MCP)](https:/
 | **Video** | Generate short videos from images or reference images (5-15 seconds on Griffin, 3-10 on Ignis, with audio), prompt-driven video editing, 2x upscaling |
 | **Audio** | Sound effects, background music, character voices, TTS |
 | **Jobs & History** | Async job queue: submit, poll or long-poll, list and cancel jobs (queued jobs refund their credits), plus paginated generation history across the API and the web app |
-| **Account** | Credit balance, plan and auto top-up settings, to check before an expensive generation; plans, prices and what each call costs |
+| **Account** | Credit balance, plan and auto top-up settings, to check before an expensive generation; plans, prices and what each call costs; buy extra credits with a payment page or a Link token, the user approving each payment |
 | **Documentation** | Search or read Ludo's own feature guidance before generating: animation modes, model choice, margins, known limitations |
 | **Feedback** | Report a limitation, bug or missing capability straight to the Ludo team |
 
@@ -1068,7 +1068,7 @@ Show your credit balance, plan and auto top-up settings. Check it before an expe
   - `grace_until`: set when the subscription has ended; remaining credits stay spendable until then.
 - `plan`: `name` and `api_access`.
 - `auto_topup`: `enabled`, `threshold` and `credits`. It is null for team members, because the team owner manages it.
-- `billing_url`: where to buy credits or change the plan or auto top-up. Those changes happen in the web app, not through the API.
+- `billing_url`: where to change the plan or auto top-up in the web app. Extra credits can also be bought through the API: see [Buy Extra Credits](#buy-extra-credits-gettopupquote-createtopuplink-gettopuplink-paytopup).
 
 **Credits:** Free
 
@@ -1079,6 +1079,46 @@ What Ludo's paid service costs and includes, for an agent advising a user: every
 **Returns:** `currency`, `summary`, `plans` (cheapest first), `top_ups`, `rules`, `costs`, `links`
 
 **Credits:** Free
+
+### Buy Extra Credits (`getTopupQuote`, `createTopupLink`, `getTopupLink`, `payTopup`)
+
+When the account runs out of credits, an agent can buy a top-up: extra credits at the plan's top-up price (the same as the web app's slider), which stay while the plan is active. A person approves every purchase. These tools never charge the card saved on the account; that only happens through auto top-up, which the user turns on in the web app. Offer a top-up when the credits run out, and buy one only when the user asks. On the ChatGPT connector these tools are not offered.
+
+**`getTopupQuote`**: the price of a top-up, and the one-time Link (`link-cli`) spend request to pay it without a browser. Free, read-only.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `credits` | Yes | How many credits, in steps of `step_credits` between `min_credits` and `max_credits` |
+
+**Returns:** `credits`, `amount` (in the currency's main unit), `amount_minor`, `currency`, `tier` (the plan whose price applies), `min_credits`, `max_credits`, `step_credits`, `network_id`, `test_mode`, `link_cli_command`
+
+**`createTopupLink`**: a Stripe payment page for that many credits, for the user to open and pay. Show them `checkout_url`. Nothing is charged until they pay, and the credits are added the moment they do. One page is open at a time.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `credits` | Yes | How many credits |
+| `replace` | No | End the account's open top-up page first and make a new one |
+
+**Returns:** `checkout_url`, `session_id`, `credits`, `amount`, `currency`, `expires_in` (seconds; a page lasts 30 minutes)
+
+**`getTopupLink`**: where a page from `createTopupLink` is. Free, read-only.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `session_id` | Yes | The `session_id` from `createTopupLink` |
+
+**Returns:** `status` (`open`: not paid yet; `paid`: paid, credits on their way; `completed`: the credits are in; `expired`: never paid), `credits`, `checkout_url`, `invoice_id`
+
+**`payTopup`**: pay with a one-time Link Shared Payment Token (`spt_...`) that the user approved in Link for exactly the amount `getTopupQuote` gave. For agents that run Link's CLI; otherwise use `createTopupLink`. A token buys one top-up. Link's agent wallet is not available in every country: see [Stripe's page on shared payment tokens](https://docs.stripe.com/agentic-commerce/concepts/shared-payment-tokens).
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `credits` | Yes | The same amount as the quote |
+| `payment_token` | Yes | The approved token, for exactly the quoted amount |
+
+**Returns:** `status` (`completed`: the credits are in; `paid`: the money is taken and the credits are on their way), `credits`, `amount`, `currency`, `invoice_id`, `extra_credits` (the account's top-up credits after this one)
+
+**Credits:** Free to call; the top-up itself is paid on the page or with the token
 
 ### Send Feedback (`submitApiFeedback`)
 
